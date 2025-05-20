@@ -97,24 +97,31 @@ exit
 ```
 
 # 🔍 **Testing with Postman** 🔍
+
 NOTE: Body is in JSON format select that option in postman
 
 *1. Register*
 
 > POST | http://192.168.56.12:3000/register
+
 > Body: { "email": "...", "password": "..." }
+
 > → Response: { "User created" }
 
 *2. Login*
 
 > POST | http://192.168.56.12:3000/login
+
 > Body: { "email": "...", "password": "..." }
+
 > → Response: { "token": "…" }
 
 *3. Delete Account*
 
 > DELETE | http://192.168.56.12:3000/delete
+
 > Header: Authorization: Bearer <token>
+
 > → Response: { "User deleted" }
 
 *Frontend UI*
