@@ -1,0 +1,10 @@
+# Use LF for all text files
+* text=auto
+
+# Explicitly set line endings for Flutter and other files
+*.dart text eol=lf
+*.sh text eol=lf
+*.swift text eol=lf
+*.cc text eol=lf
+*.h text eol=lf
+*.cmake text eol=lf
