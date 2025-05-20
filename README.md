@@ -50,11 +50,13 @@ Non-intrusive ads (AdMob) fund the service—**no direct subscription**.
   - vagrant up --provision
 ```
 This creates three VMs:
+
 - frontend at 192.168.56.11
 - backend at 192.168.56.12
 - database at 192.168.56.13
 
 # 🐳 **Container Setup & Test** 🐳
+
 *1. Database VM*
 
 After the VMs have been created run these commands one by one to check whether installation is succesful for each VM. Any errors can be debugged via Chatgpt or Google.
@@ -84,6 +86,7 @@ exit
 ```
 
 *3. Frontend VM*
+
  ```bash 
 vagrant ssh frontend
 cd /home/vagrant/frontend
@@ -97,16 +100,19 @@ exit
 NOTE: Body is in JSON format select that option in postman
 
 *1. Register*
+
 POST | http://192.168.56.12:3000/register
 Body: { "email": "...", "password": "..." }
 → Response: { "User created" }
 
 *2. Login*
+
 POST | http://192.168.56.12:3000/login
 Body: { "email": "...", "password": "..." }
 → Response: { "token": "…" }
 
 *3. Delete Account*
+
 DELETE | http://192.168.56.12:3000/delete
 Header: Authorization: Bearer <token>
 → Response: { "User deleted" }
