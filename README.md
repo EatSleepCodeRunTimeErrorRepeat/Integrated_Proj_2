@@ -64,7 +64,7 @@ After the VMs have been created run these commands one by one to check whether i
   ```bash 
 vagrant ssh database
 cd /home/vagrant/database
-docker-compose up -d
+docker compose up -d
 docker ps
 psql -h localhost -U peaksmart -d peaksmart -c "\dt"
 exit
