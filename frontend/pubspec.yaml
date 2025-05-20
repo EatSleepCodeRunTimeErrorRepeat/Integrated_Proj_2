@@ -1,0 +1,15 @@
+name: peaksmart_app
+description: A minimal PeakSmart Flutter web app
+publish_to: 'none'
+version: 1.0.0+1
+environment:
+  sdk: '>=2.18.0 <3.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.4.0
+development_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  uses-material-design: true

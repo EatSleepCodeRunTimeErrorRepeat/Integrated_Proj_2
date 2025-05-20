@@ -1,6 +1,35 @@
-.vagrant/
-*.log
-*.env
+# Node.js
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+
+# Flutter
 build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.dart_tool/
+.idea/
+.vscode/
+*.iml
+
+# macOS
 .DS_Store
+
+# Vagrant
+.vagrant/
+
+# Docker
+**/docker-compose.override.yml
+**/.env.docker.local
+**/docker-data/
+
+# Logs
+*.log
+
+# System files
+Thumbs.db
+ehthumbs.db
