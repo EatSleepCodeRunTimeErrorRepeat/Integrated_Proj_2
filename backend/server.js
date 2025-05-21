@@ -10,19 +10,14 @@ const app = express();
 
 app.use(cors({ origin: '*' }));
 app.options('*', cors());
-
-// Middleware to handle CORS
-// Built‑in body parser
 app.use(express.json());
 
-// PostgreSQL connection
+// PostgreSQL connection using DATABASE_URL
 const pool = new Pool({
-  user:     process.env.DB_USER,
-  host:     process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port:     process.env.DB_PORT,
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }, // add if Railway requires SSL
 });
+
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -34,13 +29,11 @@ app.get('/health', (_req, res) => {
 // Register
 app.post('/register', async (req, res) => {
   const { email, password } = req.body;
-  // 1) Validate input
   if (!email || !password) {
     return res.status(400).json({ error: 'Missing email or password' });
   }
 
   try {
-    // 2) Hash & insert
     const hash = await bcrypt.hash(password, 10);
     await pool.query(
       'INSERT INTO users (email, password) VALUES ($1, $2)',
@@ -48,9 +41,10 @@ app.post('/register', async (req, res) => {
     );
     res.status(201).send('User registered');
   } catch (e) {
-    // 3) Duplicate or other DB issues
-    res.status(400).json({ error: 'User already exists or DB error' });
-  }
+  console.error('Register error:', e.message);
+  res.status(400).json({ error: 'User already exists or DB error', details: e.message });
+}
+
 });
 
 // Login
@@ -66,7 +60,6 @@ app.post('/login', async (req, res) => {
       [email]
     );
     const user = result.rows[0];
-    // 2) Verify password
     if (user && await bcrypt.compare(password, user.password)) {
       const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1h' });
       return res.json({ token });
@@ -94,8 +87,18 @@ app.delete('/delete', async (req, res) => {
   }
 });
 
+// DB test
+app.get('/db-test', async (_req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ time: result.rows[0].now });
+  } catch (err) {
+    res.status(500).json({ error: 'Database connection failed', details: err.message });
+  }
+});
+
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Backend API running on http://192.168.56.12:${PORT}`);
+  console.log(`Backend API running on http://0.0.0.0:${PORT}`);
 });

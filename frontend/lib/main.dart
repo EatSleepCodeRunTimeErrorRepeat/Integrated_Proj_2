@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'utils/constants.dart';
 
-void main() => runApp(MaterialApp(home: RegisterPage()));
+void main() => runApp(MaterialApp(
+    home: RegisterPage(),
+    theme: ThemeData(
+      scaffoldBackgroundColor: AppColors.background,
+    )));
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -16,7 +21,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _register() async {
     final res = await http.post(
-      Uri.parse('http://192.168.56.12:3000/register'),
+      Uri.parse('http://localhost:3000/register'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'email': _email.text, 'password': _pass.text}),
     );
@@ -24,17 +29,32 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   @override
-  Widget build(BuildContext ctx) => Scaffold(
-        appBar: AppBar(title: Text('Register')),
-        body: Padding(
-          padding: EdgeInsets.all(16),
-          child: Column(children: [
-            TextField(controller: _email, decoration: InputDecoration(labelText: 'Email')),
-            TextField(controller: _pass, decoration: InputDecoration(labelText: 'Password')),
-            ElevatedButton(onPressed: _register, child: Text('Register')),
+  Widget build(BuildContext ctx) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Register')),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              controller: _email,
+              decoration: InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: _pass,
+              obscureText: true,
+              decoration: InputDecoration(labelText: 'Password'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _register,
+              child: Text('Register'),
+            ),
             SizedBox(height: 20),
             Text(_message),
-          ]),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }
