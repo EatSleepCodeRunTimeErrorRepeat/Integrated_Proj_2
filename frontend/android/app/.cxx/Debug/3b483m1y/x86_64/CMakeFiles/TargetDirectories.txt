@@ -1,0 +1,2 @@
+C:/Users/user/Downloads/PeakSmart/Integrated_Proj_2/frontend/android/app/.cxx/Debug/3b483m1y/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/user/Downloads/PeakSmart/Integrated_Proj_2/frontend/android/app/.cxx/Debug/3b483m1y/x86_64/CMakeFiles/rebuild_cache.dir
