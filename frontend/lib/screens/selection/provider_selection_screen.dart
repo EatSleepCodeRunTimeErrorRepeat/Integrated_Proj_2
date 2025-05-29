@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 
 class ProviderSelectionScreen extends StatefulWidget {
+  final String username;
+  final String email;
+
+  const ProviderSelectionScreen({
+    Key? key,
+    required this.username,
+    required this.email,
+  }) : super(key: key);
+
   @override
   _ProviderSelectionScreenState createState() =>
       _ProviderSelectionScreenState();
@@ -13,6 +22,17 @@ class _ProviderSelectionScreenState extends State<ProviderSelectionScreen> {
     setState(() {
       selectedProvider = provider;
     });
+
+    // Navigate to home screen and pass username, email, and selected provider
+    Navigator.pushNamed(
+      context,
+      '/home',
+      arguments: {
+        'username': widget.username,
+        'email': widget.email,
+        'provider': provider,
+      },
+    );
   }
 
   @override
