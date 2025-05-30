@@ -143,7 +143,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             IconButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/calendar');
+                Navigator.pushNamed(
+                    context, '/calendar'); // Navigate to schedule screen here
               },
               icon: Image.asset(
                 'assets/icons/calendar.png',
@@ -165,7 +166,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             IconButton(
               onPressed: () {
-                // Currently on profile
+                // Currently on profile, no action needed or optionally refresh
               },
               icon: Image.asset(
                 'assets/icons/activeprofile.png',

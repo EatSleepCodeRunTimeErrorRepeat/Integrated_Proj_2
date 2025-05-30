@@ -11,9 +11,10 @@ import 'screens/settings/profile_screen.dart';
 import 'screens/home/energy_tips_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/settings/notifications_screen.dart';
-import 'screens/settings/about_screen.dart'; // Adjust path accordingly
-import 'screens/settings/terms_screen.dart'; // Adjust path accordingly
-import 'screens/settings/change_password_screen.dart'; // Added import for placeholder
+import 'screens/settings/about_screen.dart';
+import 'screens/settings/terms_screen.dart';
+import 'screens/settings/change_password_screen.dart';
+import 'screens/schedule/schedule_screen.dart'; // <-- Added import
 
 void main() {
   runApp(const MyApp());
@@ -93,9 +94,11 @@ class MyApp extends StatelessWidget {
           case '/terms':
             return MaterialPageRoute(
                 builder: (_) => const TermsAndConditionsScreen());
-          case '/change-password': // Added route for Change Password
+          case '/change-password':
             return MaterialPageRoute(
                 builder: (_) => const ChangePasswordScreen());
+          case '/calendar': // Schedule screen route
+            return MaterialPageRoute(builder: (_) => const ScheduleScreen());
           default:
             return MaterialPageRoute(builder: (_) => SplashScreen());
         }

@@ -187,7 +187,8 @@ class HomeScreen extends StatelessWidget {
           children: [
             IconButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/calendar');
+                Navigator.pushNamed(
+                    context, '/calendar'); // Navigate to schedule screen here
               },
               icon: Image.asset(
                 'assets/icons/calendar.png',
@@ -200,7 +201,7 @@ class HomeScreen extends StatelessWidget {
               offset: const Offset(0, 4),
               child: IconButton(
                 onPressed: () {
-                  // Already on Home
+                  // Already on HomeScreen, no action needed
                 },
                 icon: Image.asset(
                   'assets/icons/activehome.png',
