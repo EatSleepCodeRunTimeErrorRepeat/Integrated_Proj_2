@@ -32,11 +32,18 @@ class HomeScreen extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
-            child: SizedBox(
-              height: 40,
-              width: 35,
-              child: Image.asset('assets/icons/EnergyTips.png',
-                  fit: BoxFit.contain),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, '/energy-tips');
+              },
+              child: SizedBox(
+                height: 40,
+                width: 35,
+                child: Image.asset(
+                  'assets/icons/EnergyTips.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
             ),
           ),
         ],
