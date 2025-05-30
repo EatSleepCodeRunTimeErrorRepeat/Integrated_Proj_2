@@ -8,9 +8,12 @@ import 'screens/selection/provider_selection_screen.dart';
 import 'screens/selection/provider_info_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/settings/profile_screen.dart';
-import 'screens/home/energy_tips_screen.dart'; // Adjust the path as needed
-import 'screens/settings/settings_screen.dart'; // Add this import
-import 'screens/settings/notifications_screen.dart'; // Adjust path if needed
+import 'screens/home/energy_tips_screen.dart';
+import 'screens/settings/settings_screen.dart';
+import 'screens/settings/notifications_screen.dart';
+import 'screens/settings/about_screen.dart'; // Adjust path accordingly
+import 'screens/settings/terms_screen.dart'; // Adjust path accordingly
+import 'screens/settings/change_password_screen.dart'; // Added import for placeholder
 
 void main() {
   runApp(const MyApp());
@@ -82,9 +85,17 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(builder: (_) => const EnergyTipsScreen());
           case '/settings':
             return MaterialPageRoute(builder: (_) => const SettingsScreen());
-          case '/notifications': // <-- Added notifications route here
+          case '/notifications':
             return MaterialPageRoute(
                 builder: (_) => const NotificationsScreen());
+          case '/about-us':
+            return MaterialPageRoute(builder: (_) => const AboutUsScreen());
+          case '/terms':
+            return MaterialPageRoute(
+                builder: (_) => const TermsAndConditionsScreen());
+          case '/change-password': // Added route for Change Password
+            return MaterialPageRoute(
+                builder: (_) => const ChangePasswordScreen());
           default:
             return MaterialPageRoute(builder: (_) => SplashScreen());
         }

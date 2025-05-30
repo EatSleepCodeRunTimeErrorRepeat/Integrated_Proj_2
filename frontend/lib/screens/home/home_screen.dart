@@ -11,7 +11,7 @@ class HomeScreen extends StatelessWidget {
     required this.username,
     required this.email,
     required this.provider,
-    this.isPeakHour = true, // default value
+    this.isPeakHour = false, // default value
   });
 
   @override
