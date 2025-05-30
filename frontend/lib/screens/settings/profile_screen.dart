@@ -42,17 +42,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 12),
-          child: Icon(Icons.settings, color: Colors.black, size: 30),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, '/settings');
+            },
+            child: const Icon(Icons.settings, color: Colors.black, size: 30),
+          ),
         ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
-            child: SizedBox(
-              height: 40,
-              width: 35,
-              child: Image.asset('assets/icons/EnergyTips.png'),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, '/energy-tips');
+              },
+              child: SizedBox(
+                height: 40,
+                width: 35,
+                child: Image.asset('assets/icons/EnergyTips.png'),
+              ),
             ),
           ),
         ],
@@ -143,8 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             IconButton(
               onPressed: () {
-                Navigator.pushNamed(
-                    context, '/calendar'); // Navigate to schedule screen here
+                Navigator.pushNamed(context, '/calendar');
               },
               icon: Image.asset(
                 'assets/icons/calendar.png',
