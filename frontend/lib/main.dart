@@ -9,6 +9,8 @@ import 'screens/selection/provider_info_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/settings/profile_screen.dart';
 import 'screens/home/energy_tips_screen.dart'; // Adjust the path as needed
+import 'screens/settings/settings_screen.dart'; // Add this import
+import 'screens/settings/notifications_screen.dart'; // Adjust path if needed
 
 void main() {
   runApp(const MyApp());
@@ -78,6 +80,11 @@ class MyApp extends StatelessWidget {
             }
           case '/energy-tips':
             return MaterialPageRoute(builder: (_) => const EnergyTipsScreen());
+          case '/settings':
+            return MaterialPageRoute(builder: (_) => const SettingsScreen());
+          case '/notifications': // <-- Added notifications route here
+            return MaterialPageRoute(
+                builder: (_) => const NotificationsScreen());
           default:
             return MaterialPageRoute(builder: (_) => SplashScreen());
         }

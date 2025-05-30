@@ -1,164 +1,177 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const EnergyTipsApp());
-}
-
-class EnergyTipsApp extends StatelessWidget {
-  const EnergyTipsApp({super.key});
+class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Energy Saving Tips',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        fontFamily: 'Poppins',
-      ),
-      home: const EnergyTipsScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class EnergyTipsScreen extends StatefulWidget {
-  const EnergyTipsScreen({super.key});
-
-  @override
-  State<EnergyTipsScreen> createState() => _EnergyTipsScreenState();
-}
-
-class _EnergyTipsScreenState extends State<EnergyTipsScreen> {
-  bool isOnPeak = false;
-
-  final onPeakTips =
-      List<String>.generate(6, (_) => 'Unplug the Laptop in the living room!');
-
-  final offPeakTips = [
-    'You can plug in the Laptop now.',
-    'Do the laundry now!',
-    'You can use the computer now :)',
-    'Unplug the Laptop in the living room!',
-    'Unplug the Laptop in the living room!',
-    'Unplug the Laptop in the living room!',
-  ];
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  bool enableNotifications = false;
+  bool peakHourAlerts = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(""),
-        backgroundColor: Colors.green.shade800,
-        leading: const Icon(Icons.arrow_back, color: Colors.white),
-        elevation: 0,
-        toolbarHeight: 40,
-      ),
+      backgroundColor: const Color(0xFFFBF8F0),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Green top bar with back button
           Container(
-            color: Colors.green.shade800,
+            height: 76,
             width: double.infinity,
-            padding: const EdgeInsets.only(left: 16, bottom: 16),
-            alignment: Alignment.centerLeft,
-            child: const Text(
-              "Energy Saving Tips",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              "Customize your own energy saving tips",
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ToggleButton(
-                text: "On-Peak Hours",
-                isSelected: isOnPeak,
-                color: Colors.red,
-                onTap: () => setState(() => isOnPeak = true),
-              ),
-              const SizedBox(width: 8),
-              ToggleButton(
-                text: "Off-Peak Hours",
-                isSelected: !isOnPeak,
-                color: Colors.green,
-                onTap: () => setState(() => isOnPeak = false),
-              ),
-              const SizedBox(width: 8),
-              const CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.grey,
-                child: Icon(Icons.edit, color: Colors.white, size: 16),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: isOnPeak ? onPeakTips.length : offPeakTips.length,
-              itemBuilder: (context, index) {
-                final tip = isOnPeak ? onPeakTips[index] : offPeakTips[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFF366D34),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 25, top: 43),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(
+                    Icons.arrow_back_ios,
+                    color: Colors.white,
+                    size: 20,
                   ),
-                  child: Text(tip),
-                );
-              },
+                ),
+              ),
             ),
           ),
+
+          const SizedBox(height: 20),
+
+          // Main "Notifications" title
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Notifications',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w600, // Medium (weight 500)
+                fontSize: 24,
+                color: Colors.black,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // New Main section label
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Main',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w500, // Medium
+                fontSize: 16,
+                color: Colors.black,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Enable Notifications toggle
+          _buildNotificationToggle(
+            context,
+            title: 'Enable Notifications',
+            description: 'Turn on or off all notifications including updates.',
+            value: enableNotifications,
+            onChanged: (val) {
+              setState(() {
+                enableNotifications = val;
+              });
+            },
+          ),
+
+          const SizedBox(height: 20),
+
+          // Peak Hour Alerts toggle
+          _buildNotificationToggle(
+            context,
+            title: 'Peak Hour Alerts',
+            description:
+                'Receive notifications when peak hours are about to begin or end.',
+            value: peakHourAlerts,
+            onChanged: (val) {
+              setState(() {
+                peakHourAlerts = val;
+              });
+            },
+          ),
+
+          const SizedBox(height: 140),
         ],
       ),
     );
   }
-}
 
-class ToggleButton extends StatelessWidget {
-  final String text;
-  final bool isSelected;
-  final Color color;
-  final VoidCallback onTap;
-
-  const ToggleButton({
-    super.key,
-    required this.text,
-    required this.isSelected,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? color : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isSelected ? Colors.white : color,
-            fontWeight: FontWeight.bold,
+  Widget _buildNotificationToggle(
+    BuildContext context, {
+    required String title,
+    required String description,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Texts Column
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w500, // Medium 15 for items
+                    fontSize: 15,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w300, // Light
+                    fontSize: 10,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+
+          const SizedBox(width: 10),
+
+          // Smaller toggle switch with no outline & white thumb
+          Transform.scale(
+            scale: 0.85,
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+              ),
+              child: Switch(
+                value: value,
+                onChanged: onChanged,
+                activeColor: const Color(0xFF2196F3),
+                activeTrackColor: const Color(0xFF90CAF9),
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: Colors.grey.shade300,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                overlayColor: MaterialStateProperty.all(Colors.transparent),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

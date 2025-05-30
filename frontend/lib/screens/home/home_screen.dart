@@ -26,7 +26,12 @@ class HomeScreen extends StatelessWidget {
           child: SizedBox(
             height: 28,
             width: 28,
-            child: Icon(Icons.settings, color: Colors.black, size: 30),
+            child: IconButton(
+              icon: Icon(Icons.settings, color: Colors.black, size: 30),
+              onPressed: () {
+                Navigator.pushNamed(context, '/settings');
+              },
+            ),
           ),
         ),
         actions: [
