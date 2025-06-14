@@ -1,0 +1,37 @@
+# backend/docker-compose.yml
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # This URL connects to the 'mongo' service defined below
+      # FIX: Added ?replicaSet=rs0 to the connection string
+      DATABASE_URL: "mongodb://mongo:27017/PeakSmart?authSource=admin&replicaSet=rs0"
+      
+      # Secrets populated from your .env file
+      JWT_TOKEN_SECRET: "aacd8c56594bbf0ae3b64cb7ca99d31f6b27db0d4c6066a20e3bb7123e9f25069597a3f1842ba5128b5b222020999943ec1fb36dab164aa1631095964d18e6f5"
+      JWT_TOKEN_REFRESH_SECRET: "your_second_unique_random_string_here"
+      PORT: 8000
+    depends_on:
+      - mongo
+    networks:
+      - app-network
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+    # NEW: Add this command to start Mongo as a replica set named 'rs0'
+    command: mongod --replSet rs0 --bind_ip_all
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongo-data:

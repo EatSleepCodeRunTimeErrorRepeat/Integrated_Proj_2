@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  email                String    @unique
+  name                 String
+  password             String?   // The '?' makes this field optional
+  provider             String?
+  notificationsEnabled Boolean   @default(true)
+  notes                Note[]
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  googleId             String?   @unique
+  avatarUrl            String?
+}
+
+model Note {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  content    String
+  peakPeriod String   // "ON_PEAK" or "OFF_PEAK"
+  date       DateTime
+  author     User     @relation(fields: [authorId], references: [id])
+  authorId   String   @db.ObjectId
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model PeakSchedule {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  provider  String
+  dayOfWeek Int?      // 0 = Sun, 1 = Mon, ..., 6 = Sat. Optional now.
+  specificDate DateTime? // e.g., for a national holiday.
+  startTime String    // "HH:mm"
+  endTime   String    // "HH:mm"
+  isPeak    Boolean
+}
+
+
