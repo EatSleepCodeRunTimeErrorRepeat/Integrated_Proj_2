@@ -20,11 +20,18 @@ allprojects {
 }
 
 rootProject.buildDir = '../build'
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
     project.evaluationDependsOn(':app')
+
+    if (project.name == 'google_mobile_ads') {
+        def androidExt = project.extensions.findByName("android")
+        if (androidExt != null) {
+            androidExt.namespace = "io.flutter.plugins.googlemobileads"
+        }
+    }
+
 }
 
 tasks.register("clean", Delete) {

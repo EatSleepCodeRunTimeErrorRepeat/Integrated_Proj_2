@@ -10,7 +10,8 @@ import 'package:frontend/widgets/tips_carousel_widget.dart';
 import 'package:frontend/widgets/top_navbar.dart';
 import 'package:frontend/widgets/ad_banner_widget.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:frontend/widgets/adsense_widget.dart';
+import 'package:frontend/widgets/adsense_widget_stub.dart'
+    if (dart.library.html) 'package:frontend/widgets/adsense_widget._web.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});

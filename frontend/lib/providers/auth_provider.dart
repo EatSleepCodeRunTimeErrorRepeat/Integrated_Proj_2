@@ -144,15 +144,17 @@ class AuthProvider extends StateNotifier<AuthState> {
         final data = jsonDecode(response.body);
         await _appDataBox.put('accessToken', data['accessToken']);
         await fetchUserProfile();
-        _ref.invalidate(peakStatusProvider);
         _ref.invalidate(homeProvider);
       } else {
         final errorData = jsonDecode(response.body);
-        state = state.copyWith(isLoading: false, error: errorData['message']);
+        // This handles backend errors like "Invalid credentials"
+        state = state.copyWith(
+            isLoading: false, error: errorData['Invalid credentials']);
       }
     } catch (e) {
       state = state.copyWith(
-          isLoading: false, error: "Connection failed. Please try again.");
+          isLoading: false,
+          error: "Network Error: Could not connect to the server.");
     }
   }
 

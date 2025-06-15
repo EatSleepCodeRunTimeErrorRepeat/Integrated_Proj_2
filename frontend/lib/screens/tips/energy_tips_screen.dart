@@ -3,7 +3,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:frontend/api/api_service.dart';
 import 'package:frontend/models/note_model.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/notes_provider.dart';
