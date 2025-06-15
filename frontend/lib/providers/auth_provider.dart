@@ -79,10 +79,12 @@ class AuthProvider extends StateNotifier<AuthState> {
   Future<void> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
-        state = state.copyWith(isLoading: false); // User cancelled the sign-in
+        // The user canceled the sign-in
+        state = state.copyWith(isLoading: false);
         return;
       }
 
@@ -94,7 +96,8 @@ class AuthProvider extends StateNotifier<AuthState> {
         throw Exception('Failed to get Google ID token.');
       }
 
-      // Send the token to the backend endpoint we prepared
+      // wait for our API service to handle the Google sign-in
+      // This is where we send the ID token to our backend for verification
       final response = await _apiService.googleSignIn(idToken);
 
       if (response.statusCode == 200) {
@@ -102,16 +105,13 @@ class AuthProvider extends StateNotifier<AuthState> {
         await _appDataBox.put('accessToken', data['accessToken']);
         await fetchUserProfile();
         _ref.invalidate(homeProvider);
-        _ref.invalidate(peakStatusProvider);
       } else {
         final errorData = jsonDecode(response.body);
         state = state.copyWith(isLoading: false, error: errorData['message']);
-        await _googleSignIn.signOut();
       }
     } catch (e) {
       state = state.copyWith(
-          isLoading: false, error: "Sign-in failed. Please try again.");
-      await _googleSignIn.signOut();
+          isLoading: false, error: "Google Sign-In failed: ${e.toString()}");
     }
   }
 

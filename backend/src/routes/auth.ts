@@ -19,6 +19,7 @@ const generateTokens = (userId: string) => {
   return { accessToken, refreshToken };
 };
 
+// This function now correctly receives the transaction client 'tx'
 export const createDefaultNotes = async (userId: string, tx: Prisma.TransactionClient | PrismaClient): Promise<void> => {
     const defaultNotes = [
         { content: 'Avoid using the oven; use a microwave instead.', peakPeriod: 'ON_PEAK', authorId: userId, date: new Date() },
@@ -33,69 +34,8 @@ export const createDefaultNotes = async (userId: string, tx: Prisma.TransactionC
 
 
 // --- AUTHENTICATION ROUTES ---
-
-router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email, password, name } = req.body;
-    if (!email || !password || !name) {
-      res.status(400).json({ message: 'All fields are required' });
-      return;
-    }
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      res.status(409).json({ message: 'User with this email already exists' });
-      return;
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const user = await prisma.$transaction(async (tx) => {
-      const newUser = await tx.user.create({ data: { email, name, password: hashedPassword } });
-      await createDefaultNotes(newUser.id, tx);
-      return newUser;
-    });
-    
-    res.status(201).json({ message: 'User created successfully', userId: user.id });
-    
-  } catch (error) {
-    console.error('Registration Error:', error);
-    res.status(500).json({ message: 'Internal server error during registration' });
-  }
-});
-
-router.post('/login', async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            res.status(400).json({ message: 'Email and password are required' });
-            return;
-        }
-        const user = await prisma.user.findUnique({ where: { email } });
-        
-        // FIX: Combined guard clause to handle null user or null password.
-        if (!user || !user.password) {
-            res.status(401).json({ message: 'Invalid credentials' });
-            return;
-        }
-
-        // Because of the check above, TypeScript now knows user.password is a string.
-        const isMatch = await bcrypt.compare(password, user.password);
-
-        if (!isMatch) {
-            res.status(401).json({ message: 'Invalid credentials' });
-            return;
-        }
-
-        const { accessToken, refreshToken } = generateTokens(user.id);
-        res.status(200).json({ accessToken, refreshToken, user });
-    } catch (error) {
-        console.error('Login Error:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
-router.post('/google/signin', async (req: Request, res: Response): Promise<void> => {
+// --- GOOGLE SIGN-IN ROUTE ---
+router.post('/google-signin', async (req: Request, res: Response): Promise<void> => {
     try {
         const { token } = req.body;
         if (!token) {
@@ -105,41 +45,123 @@ router.post('/google/signin', async (req: Request, res: Response): Promise<void>
 
         const ticket = await googleClient.verifyIdToken({
             idToken: token,
-            audience: process.env.ANDROID_CLIENT_ID,
+            audience: process.env.GOOGLE_CLIENT_ID,
         });
 
         const payload = ticket.getPayload();
-
-        if (!payload || !payload.sub || !payload.email) {
-            res.status(400).json({ message: 'Invalid Google token payload.' });
+        if (!payload || !payload.sub || !payload.email || !payload.name) {
+            res.status(400).json({ message: 'Invalid Google token' });
             return;
         }
-        
+
         const { sub: googleId, email, name, picture: avatarUrl } = payload;
         
         let user = await prisma.user.findUnique({ where: { googleId } });
 
         if (!user) {
-            user = await prisma.user.findUnique({ where: { email } });
+            user = await prisma.user.findUnique({ where: { email }});
+            
             if (user) {
-                user = await prisma.user.update({ where: { email }, data: { googleId, avatarUrl: user.avatarUrl || avatarUrl }});
+                // Link existing account
+                user = await prisma.user.update({
+                    where: { email },
+                    data: { googleId, avatarUrl: user.avatarUrl ?? avatarUrl },
+                });
             } else {
+                // **FIX:** Use a transaction to create the user and their notes together.
                 user = await prisma.$transaction(async (tx) => {
                     const newUser = await tx.user.create({
-                        data: { email, name: name || 'User', googleId, avatarUrl }
+                        data: {
+                            email,
+                            name,
+                            googleId,
+                            avatarUrl,
+                        },
                     });
+                    // Pass the transaction client 'tx' to the function
                     await createDefaultNotes(newUser.id, tx);
                     return newUser;
                 });
             }
         }
-        
+
         const { accessToken, refreshToken } = generateTokens(user.id);
-        res.status(200).json({ accessToken, refreshToken, user });
+        const userResponse = { id: user.id, email: user.email, name: user.name, provider: user.provider, avatarUrl: user.avatarUrl };
+        res.status(200).json({ accessToken, refreshToken, user: userResponse });
 
     } catch (error) {
         console.error('Google Sign-In Error:', error);
         res.status(500).json({ message: 'Internal server error during Google Sign-In' });
+    }
+});
+
+
+// --- REGISTER ROUTE ---
+router.post('/register', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { name, email, password } = req.body;
+
+        if (!name || !email || !password) {
+            res.status(400).json({ message: 'Name, email, and password are required' });
+            return;
+        }
+
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            res.status(400).json({ message: 'User with this email already exists' });
+            return;
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // **FIX:** Use a transaction to create the user and their notes together.
+        await prisma.$transaction(async (tx) => {
+            const user = await tx.user.create({
+                data: {
+                    name,
+                    email,
+                    password: hashedPassword,
+                },
+            });
+            // Pass the transaction client 'tx' to the function
+            await createDefaultNotes(user.id, tx);
+        });
+
+        res.status(201).json({ message: 'User registered successfully. Please log in.' });
+        return;
+
+    } catch (error) {
+        console.error('Register Error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+        return;
+    }
+});
+
+// --- LOGIN ROUTE ---
+router.post('/login', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            res.status(400).json({ message: 'Email and password are required' });
+            return;
+        }
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user || !user.password) {
+            res.status(401).json({ message: 'Invalid credentials or user logs in with social account.' });
+            return;
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            res.status(401).json({ message: 'Invalid credentials' });
+            return;
+        }
+        const { accessToken, refreshToken } = generateTokens(user.id);
+        const userResponse = { id: user.id, email: user.email, name: user.name, provider: user.provider, avatarUrl: user.avatarUrl };
+        res.status(200).json({ accessToken, refreshToken, user: userResponse });
+    } catch (error) {
+        console.error('Login Error:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 
@@ -155,7 +177,6 @@ router.post('/verify-password', protect, async (req: AuthRequest, res: Response)
         
         const user = await prisma.user.findUnique({ where: { id: userId } });
         
-        // FIX: Same combined guard clause as in the login route.
         if (!user || !user.password) {
             res.status(404).json({ message: 'User not found or password not set' });
             return;
@@ -204,6 +225,41 @@ router.post('/change-password', protect, async (req: AuthRequest, res: Response)
         console.error('Change Password Error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
+});
+
+// --- SEARCH NOTES BY CONTENT ---
+router.get('/search', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    const { q } = req.query; // Search query, e.g., /api/notes/search?q=laundry
+
+    if (!userId) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+    if (!q || typeof q !== 'string') {
+      res.status(400).json({ message: 'A search query parameter "q" is required.' });
+      return;
+    }
+
+    const notes = await prisma.note.findMany({
+      where: {
+        authorId: userId,
+        content: {
+          contains: q,
+          mode: 'insensitive', // Case-insensitive search
+        },
+      },
+      orderBy: {
+        date: 'desc',
+      },
+    });
+
+    res.status(200).json(notes);
+  } catch (error) {
+    console.error('Search Notes Error:', error);
+    res.status(500).json({ message: 'Server error searching notes' });
+  }
 });
 
 export default router;

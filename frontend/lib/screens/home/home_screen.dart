@@ -8,6 +8,9 @@ import 'package:frontend/providers/home_provider.dart';
 import 'package:frontend/utils/app_theme.dart';
 import 'package:frontend/widgets/tips_carousel_widget.dart';
 import 'package:frontend/widgets/top_navbar.dart';
+import 'package:frontend/widgets/ad_banner_widget.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:frontend/widgets/adsense_widget.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -158,7 +161,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 24),
               const TipsCarouselWidget(),
               const SizedBox(height: 40),
-              _buildAdBanner(),
+              kIsWeb ? const AdsenseWidget() : const AdBannerWidget(),
             ],
           ),
         ),
@@ -214,23 +217,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 fontFamily: 'Inter')),
         Text(label, style: const TextStyle(fontSize: 12, color: Colors.black)),
       ],
-    );
-  }
-
-  Widget _buildAdBanner() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 50),
-      height: 50,
-      width: double.infinity,
-      decoration: BoxDecoration(
-          color: AppTheme.adGrey, borderRadius: BorderRadius.circular(8)),
-      alignment: Alignment.center,
-      child: const Text("AD",
-          style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w700)),
     );
   }
 }

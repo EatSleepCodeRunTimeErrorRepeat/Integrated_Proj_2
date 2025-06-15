@@ -24,12 +24,12 @@ class ApiService {
   }
 
   // FIX: Added the missing googleSignIn method
-  Future<http.Response> googleSignIn(String googleToken) async {
+  Future<http.Response> googleSignIn(String token) async {
     final url = Uri.parse('$apiBaseUrl/auth/google-signin');
     return http.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'token': googleToken}),
+      body: jsonEncode({'token': token}),
     );
   }
 
@@ -170,6 +170,12 @@ class ApiService {
 
   Future<http.Response> getAllNotes() async {
     final url = Uri.parse('$apiBaseUrl/notes/all');
+    final headers = await _getHeaders();
+    return await http.get(url, headers: headers);
+  }
+
+  Future<http.Response> searchNotes(String query) async {
+    final url = Uri.parse('$apiBaseUrl/notes/search?q=$query');
     final headers = await _getHeaders();
     return await http.get(url, headers: headers);
   }
