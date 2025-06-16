@@ -4,6 +4,7 @@ import 'package:frontend/api/api_service.dart';
 import 'package:frontend/models/user_model.dart';
 import 'package:frontend/providers/home_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:frontend/providers/calendar_provider.dart';
 import 'package:hive/hive.dart';
 
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
@@ -15,9 +16,14 @@ class AuthState {
   final String? error;
   final User? user;
   final bool isAuthenticated;
+  final String? localAvatarPath;
 
-  AuthState({this.isLoading = false, this.error, this.user})
-      : isAuthenticated = user != null;
+  AuthState({
+    this.isLoading = false,
+    this.error,
+    this.user,
+    this.localAvatarPath,
+  }) : isAuthenticated = user != null;
 
   AuthState copyWith({
     bool? isLoading,

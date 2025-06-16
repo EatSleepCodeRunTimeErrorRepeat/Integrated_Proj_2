@@ -86,9 +86,12 @@ class AllNotesNotifier extends StateNotifier<AsyncValue<List<Note>>> {
   }
 }
 
-// The provider is now a StateNotifierProvider.
+// FIX: Update the provider definition to watch the auth state
 final allNotesProvider =
     StateNotifierProvider<AllNotesNotifier, AsyncValue<List<Note>>>((ref) {
+  // By watching the auth provider, this provider will automatically
+  // be re-created when the user logs in or out.
+  ref.watch(authProvider.select((auth) => auth.isAuthenticated));
   return AllNotesNotifier(ref);
 });
 

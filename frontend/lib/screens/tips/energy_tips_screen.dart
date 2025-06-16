@@ -5,6 +5,7 @@ import 'package:frontend/models/note_model.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/notes_provider.dart';
 import 'package:frontend/utils/app_theme.dart';
+import 'package:intl/intl.dart';
 
 class EnergyTipsScreen extends ConsumerStatefulWidget {
   final DateTime selectedDate;
@@ -79,9 +80,13 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
     final currentList = _selectedPeriod == 0 ? onPeakNotes : offPeakNotes;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F2E5), // Background color
+      backgroundColor: const Color(0xFFF8F2E5),
       appBar: AppBar(
-        title: const Text('Energy Saving Tips'),
+        // FIX: Display the selected date in the AppBar title
+        title: Text(
+          'Tips for ${DateFormat.yMMMMd().format(widget.selectedDate)}',
+          style: const TextStyle(fontSize: 18),
+        ),
         leading: const BackButton(color: AppTheme.textBlack),
       ),
       body: Padding(
@@ -119,7 +124,7 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                 ),
               ),
               onSubmitted:
-                  _performSearch, // Search when user presses done/enter
+                  (query) {}, //_performSearch, // Search when user presses done/enter
             ),
             const SizedBox(height: 16),
 
@@ -292,9 +297,8 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                   IconButton(
                     icon: Image.asset('assets/icons/cancel.png',
                         width: 18, height: 18),
-                    onPressed: () => notifier
-                        .deleteNote(note.id)
-                        .then((_) => _performSearch(_searchController.text)),
+                    onPressed: () => notifier.deleteNote(note.id),
+                    //.then((_) => _performSearch(_searchController.text)),
                   ),
                 Expanded(
                   child: Text(note.content,
@@ -336,9 +340,9 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                       decoration: InputDecoration(
                         hintText: 'Enter your savings tip...',
                         filled: true,
-                        fillColor: Color.fromARGB(255, 245, 245, 244),
-                        contentPadding:
-                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        fillColor: const Color.fromARGB(255, 245, 245, 244),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide:
@@ -372,7 +376,8 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                           },
                           child: Text(
                             selectedTime.format(context),
-                            style: TextStyle(color: AppTheme.primaryGreen),
+                            style:
+                                const TextStyle(color: AppTheme.primaryGreen),
                           ),
                         ),
                       ],
@@ -383,7 +388,7 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text('Cancel',
+                  child: const Text('Cancel',
                       style: TextStyle(color: AppTheme.primaryGreen)),
                 ),
                 ElevatedButton(
@@ -397,7 +402,7 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                         selectedTime.hour,
                         selectedTime.minute,
                       );
-                      Future<void> action;
+                      Future<bool> action;
 
                       // Add the new note if not editing, or update if editing
                       if (isEditingNote) {
@@ -416,23 +421,17 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                       }
 
                       // Wait for the action to complete
-                      await action;
-
-                      // Debugging: Ensure note is added
-                      print('Note Added: $content');
+                      final success = await action;
 
                       // Refresh the UI after adding the note
                       if (_isSearching && mounted) {
-                        _performSearch(_searchController.text);
+                        //_performSearch(_searchController.text);
                       }
 
                       // Dismiss the dialog after saving
                       if (dialogContext.mounted) {
                         Navigator.of(dialogContext).pop();
                       }
-
-                      // Update the state to refresh the UI
-                      setState(() {});
                     } else {
                       print('Content is empty');
                     }

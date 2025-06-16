@@ -10,6 +10,7 @@ import userRoutes from './routes/users';
 import scheduleRoutes from './routes/schedules';
 import statusRoutes from './routes/status'; 
 
+
 // --- INITIALIZATION ---
 const app: Express = express();
 const port = Number(process.env.PORT) || 8000;

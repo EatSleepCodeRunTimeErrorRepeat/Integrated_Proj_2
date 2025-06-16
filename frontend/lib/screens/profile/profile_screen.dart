@@ -2,15 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/screens/auth/auth_wrapper.dart';
 import 'package:frontend/screens/provider/provider_selection_screen.dart';
 import 'package:frontend/utils/app_theme.dart';
 import 'package:frontend/widgets/top_navbar.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:frontend/widgets/bottom_nav.dart'; // Import your BottomNav
-
-// Import the screens for navigation
-import 'package:frontend/screens/schedule/schedule_screen.dart'; // Import ScheduleScreen
-import 'package:frontend/screens/home/home_screen.dart'; // Import HomeScreen
+// ADD THIS IMPORT for local storage
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final bool fromSettings;
@@ -21,145 +19,97 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  // This holds the preview of a just-picked image
   File? _avatarImage;
+  // This will hold the path of the image saved to local storage
+  String? _savedAvatarPath;
+
   final ImagePicker _picker = ImagePicker();
 
-  Future<void> _pickImage() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+  @override
+  void initState() {
+    super.initState();
+    // Load the saved avatar path when the screen is first loaded
+    _loadSavedAvatar();
+  }
+
+  /// Loads the image path from the device's local storage.
+  Future<void> _loadSavedAvatar() async {
+    final prefs = await SharedPreferences.getInstance();
+    // We use a user-specific key to avoid showing one user's picture for another
+    final userId = ref.read(authProvider).user?.id;
+    if (userId != null && prefs.containsKey('avatar_path_$userId')) {
       setState(() {
-        _avatarImage = File(pickedFile.path);
+        _savedAvatarPath = prefs.getString('avatar_path_$userId');
       });
-      // TODO: Call backend to upload image
     }
   }
 
-  Future<void> _showPasswordDialog() async {
-    final passwordController = TextEditingController();
+  /// Lets the user pick an image and saves its path locally.
+  Future<void> _pickImage() async {
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+
+    if (pickedFile != null) {
+      // Show a preview of the image immediately
+      setState(() {
+        _avatarImage = File(pickedFile.path);
+        _savedAvatarPath =
+            null; // Clear old saved path to prioritize new preview
+      });
+
+      // --- SIMPLER SOLUTION: Save the file path locally ---
+      final prefs = await SharedPreferences.getInstance();
+      final userId = ref.read(authProvider).user?.id;
+      if (userId != null) {
+        await prefs.setString('avatar_path_$userId', pickedFile.path);
+      }
+    }
+  }
+
+  // ... (The _showEditUsernameDialog and _showPasswordDialog methods remain unchanged)
+  Future<void> _showEditUsernameDialog() async {
+    final user = ref.read(authProvider).user;
+    if (user == null) return;
+
+    final nameController = TextEditingController(text: user.name);
     final formKey = GlobalKey<FormState>();
 
-    await showDialog<void>(
-      // Password change dialog
+    await showDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return Consumer(builder: (context, ref, child) {
-          final authState = ref.watch(authProvider);
-
-          ref.listen<AuthState>(authProvider, (previous, next) {
-            if (next.error != null && previous?.error != next.error) {
-              ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(
-                content: Text(next.error!),
-                backgroundColor: AppTheme.peakRed,
-              ));
-              ref.read(authProvider.notifier).clearError();
-            }
-          });
-
-          return AlertDialog(
-            backgroundColor:
-                const Color(0xFFF8F2E5), // Background color for the container
-            title: const Text(
-              'Confirm Password',
-              style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16),
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Change Username'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'New Username'),
+              validator: (value) => (value == null || value.trim().isEmpty)
+                  ? 'Username cannot be empty'
+                  : null,
             ),
-            content: Form(
-              key: formKey,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12), // Rounded corners
-                ),
-                child: TextFormField(
-                  controller: passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    hintText: 'Enter your password',
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 12), // Content padding
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                          color: Colors.grey.shade300,
-                          width: 2), // Border with more visibility
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.grey.shade300, width: 2),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                          color: AppTheme.primaryGreen,
-                          width: 2), // More prominent border color
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: AppTheme.primaryGreen),
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: AppTheme.primaryGreen),
-                    ),
-                  ),
-                  validator: (value) => (value == null || value.isEmpty)
-                      ? 'Password is required'
-                      : null,
-                ),
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
             ),
-            actions: <Widget>[
-              TextButton(
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(
-                      color: AppTheme
-                          .primaryGreen), // Cancel button in AppTheme.green
-                ),
-                onPressed: () => Navigator.of(dialogContext).pop(),
-              ),
-              ElevatedButton(
-                onPressed: authState.isLoading
-                    ? null
-                    : () async {
-                        if (formKey.currentState!.validate()) {
-                          final success = await ref
-                              .read(authProvider.notifier)
-                              .verifyPassword(passwordController.text);
-                          if (!dialogContext.mounted) return;
-                          if (success) {
-                            Navigator.of(dialogContext).pop();
-                            Navigator.push(
-                                dialogContext,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        const ProviderSelectionScreen()));
-                          }
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(120, 40), // Smaller verify button
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: authState.isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Verify'),
-              ),
-            ],
-          );
-        });
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  await ref
+                      .read(authProvider.notifier)
+                      .updateUser(name: nameController.text.trim());
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
       },
     );
   }
@@ -171,11 +121,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return const Scaffold(body: Center(child: Text("User not found.")));
     }
 
+    // Determine which image to show based on a clear priority
+    ImageProvider displayImage;
+    if (_avatarImage != null) {
+      // 1. Show the newly picked image file
+      displayImage = FileImage(_avatarImage!);
+    } else if (_savedAvatarPath != null) {
+      // 2. Show the image from the saved local path
+      displayImage = FileImage(File(_savedAvatarPath!));
+    } else if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty) {
+      // 3. Show the synced Google/backend image URL
+      displayImage = NetworkImage(user.avatarUrl!);
+    } else {
+      // 4. Fallback to the default asset image
+      displayImage = const AssetImage('assets/images/avatar.png');
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: TopNavBar(
-        showBackButton: widget.fromSettings,
-      ),
+      appBar: TopNavBar(showBackButton: widget.fromSettings),
       body: Column(
         children: [
           Expanded(
@@ -188,10 +152,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     children: [
                       CircleAvatar(
                         radius: 54,
-                        backgroundImage: _avatarImage != null
-                            ? FileImage(_avatarImage!)
-                            : const AssetImage('assets/images/avatar.png')
-                                as ImageProvider,
+                        backgroundImage:
+                            displayImage, // Use the determined image
                       ),
                       GestureDetector(
                         onTap: _pickImage,
@@ -209,11 +171,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(user.name,
-                      style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins')),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        user.name,
+                        style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Poppins'),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined,
+                            size: 20, color: Colors.grey),
+                        onPressed: _showEditUsernameDialog,
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 40),
                   _InfoField(
                     icon: Icons.email_outlined,
@@ -221,9 +196,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     value: user.email,
                   ),
                   GestureDetector(
-                    onTap: _showPasswordDialog,
+                    onTap: () {}, //_showPasswordDialog,
                     child: _InfoField(
-                      icon: Icons.lightbulb_outline, // Light bulb icon
+                      icon: Icons.lightbulb_outline,
                       label: 'Electricity Provider',
                       value: user.provider ?? 'Not Set',
                       isEditable: true,
@@ -236,11 +211,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
             child: OutlinedButton(
-              onPressed: () => ref.read(authProvider.notifier).logout(),
+              onPressed: () async {
+                // First, await the logout process from the provider
+                await ref.read(authProvider.notifier).logout();
+                // After logout, navigate to the AuthWrapper and clear all previous screens.
+                // This ensures a clean state and navigates the user to the LoginScreen.
+                if (mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                        builder: (context) => const AuthWrapper()),
+                    (Route<dynamic> route) => false,
+                  );
+                }
+              },
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
-                side: const BorderSide(
-                    color: AppTheme.primaryGreen), // Use AppTheme color
+                side: const BorderSide(color: AppTheme.primaryGreen),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
@@ -249,24 +235,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: BottomNav(
-        currentIndex: 2, // ProfileScreen index
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ScheduleScreen()),
-            );
-          } else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HomeScreen()),
-            );
-          } else {
-            // ProfileScreen (no action required)
-          }
-        },
       ),
     );
   }
@@ -307,7 +275,7 @@ class _InfoField extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(icon, color: Colors.grey.shade600), // Light bulb icon here
+                Icon(icon, color: Colors.grey.shade600),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(value,
@@ -315,9 +283,7 @@ class _InfoField extends StatelessWidget {
                           fontSize: 14, color: AppTheme.textGrey)),
                 ),
                 if (isEditable)
-                  const Icon(Icons.edit,
-                      color: AppTheme.textGrey,
-                      size: 16), // Pencil icon for edit
+                  const Icon(Icons.edit, color: AppTheme.textGrey, size: 16),
               ],
             ),
           ),
