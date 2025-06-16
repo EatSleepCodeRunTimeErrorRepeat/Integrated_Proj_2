@@ -1,6 +1,8 @@
+// lib/screens/auth/splash_screen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:frontend/screens/auth/landing_screen.dart';
+import 'package:frontend/screens/auth/auth_wrapper.dart'; // Import AuthWrapper
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -9,7 +11,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   late AnimationController _logoController;
   late Animation<double> _logoAnimation;
 
@@ -20,15 +23,20 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _logoAnimation = CurvedAnimation(parent: _logoController, curve: Curves.elasticOut);
+    _logoAnimation =
+        CurvedAnimation(parent: _logoController, curve: Curves.elasticOut);
 
     _logoController.forward();
 
+    // REFINED NAVIGATION LOGIC
+    // Navigate to the AuthWrapper after the animation. The AuthWrapper will
+    // handle the logic of showing the correct screen based on auth state.
     Timer(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LandingScreen()),
+          // Navigate to AuthWrapper instead of LandingScreen
+          MaterialPageRoute(builder: (_) => const AuthWrapper()),
         );
       }
     });

@@ -1,7 +1,8 @@
+// lib/screens/auth/register_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/auth_provider.dart';
-import 'package:frontend/screens/auth/login_screen.dart';
 import 'package:frontend/utils/app_theme.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -19,7 +20,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  // Separate flag for Google sign-in loading
   bool _isGoogleSignInLoading = false;
 
   @override
@@ -31,35 +31,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
+  // REFINED REGISTRATION LOGIC
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       FocusScope.of(context).unfocus();
-      ref.read(authProvider.notifier).clearError();
 
-      final success = await ref.read(authProvider.notifier).register(
-          _nameController.text.trim(),
-          _emailController.text.trim(),
-          _passwordController.text.trim());
-
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Registration successful! Please log in.'),
-          backgroundColor: AppTheme.offPeakGreen,
-        ));
-        Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const LoginScreen()));
-      }
+      // The authProvider's register method now handles logging the user in.
+      // We don't need to check the 'success' boolean or navigate manually.
+      // The AuthWrapper will automatically redirect the user to the correct screen
+      // once the authentication state changes.
+      await ref.read(authProvider.notifier).register(
+            _nameController.text.trim(),
+            _emailController.text.trim(),
+            _passwordController.text.trim(),
+          );
     }
   }
 
   Future<void> _signInWithGoogle() async {
     setState(() {
-      _isGoogleSignInLoading = true; // Set Google button loading state
+      _isGoogleSignInLoading = true;
     });
     await ref.read(authProvider.notifier).signInWithGoogle();
-    setState(() {
-      _isGoogleSignInLoading = false; // Reset Google button loading state
-    });
+    if (mounted) {
+      setState(() {
+        _isGoogleSignInLoading = false;
+      });
+    }
   }
 
   @override
@@ -74,6 +72,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     final authState = ref.watch(authProvider);
 
+    // --- The rest of the build method is unchanged ---
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register'),
@@ -147,19 +146,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ? 'Passwords do not match'
                         : null),
                 const SizedBox(height: 32),
-
-                // Register Button
                 ElevatedButton(
                   onPressed: authState.isLoading ? null : _register,
-                  child: authState.isLoading
+                  child: authState.isLoading && !_isGoogleSignInLoading
                       ? const SizedBox(
                           height: 24,
                           width: 24,
                           child: CircularProgressIndicator(color: Colors.white))
                       : const Text('Register'),
                 ),
-
-                // "Or Register with" text with dashed lines
                 const SizedBox(height: 24),
                 Row(
                   children: [
@@ -167,7 +162,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: Divider(
                         color: Color.fromARGB(255, 145, 149, 158),
                         thickness: 1,
-                        endIndent: 10, // Adjust space before the text
+                        endIndent: 10,
                       ),
                     ),
                     const Text(
@@ -183,16 +178,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: Divider(
                         color: Color.fromARGB(255, 145, 149, 158),
                         thickness: 1,
-                        indent: 10, // Adjust space after the text
+                        indent: 10,
                       ),
                     ),
                   ],
                 ),
-
-                // Google sign-in button
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: _isGoogleSignInLoading ? null : _signInWithGoogle,
+                  onPressed: authState.isLoading ? null : _signInWithGoogle,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
@@ -200,16 +193,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     padding: const EdgeInsets.all(16.0),
                   ),
                   child: _isGoogleSignInLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                AppTheme.primaryGreen),
+                          ))
                       : Image.asset('assets/icons/Google.png', height: 24.0),
                 ),
-
-                // Link to login screen
                 const SizedBox(height: 32),
                 Center(
                   child: GestureDetector(
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen())),
+                    onTap: () => Navigator.of(context).pop(),
                     child: Text.rich(
                       TextSpan(
                         text: "Already have an account? ",

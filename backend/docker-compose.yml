@@ -3,16 +3,9 @@ services:
     build: .
     ports:
       - "8000:8000"
-    environment:
-      # uses the DATABASE_URL  .env file
-      DATABASE_URL: ${DATABASE_URL} 
-      JWT_TOKEN_SECRET: ${JWT_TOKEN_SECRET}
-      JWT_TOKEN_REFRESH_SECRET: ${JWT_TOKEN_REFRESH_SECRET}
-      PORT: 8000
-      # Google variables
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+    # Use env_file to directly load variables from the .env file
+    env_file:
+      - .env
     networks:
       - app-network
 

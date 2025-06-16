@@ -11,7 +11,7 @@ import 'package:frontend/widgets/top_navbar.dart';
 import 'package:frontend/widgets/ad_banner_widget.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:frontend/widgets/adsense_widget_stub.dart'
-    if (dart.library.html) 'package:frontend/widgets/adsense_widget._web.dart';
+    if (dart.library.html) 'package:frontend/widgets/adsense_widget_web.dart';
 import 'package:frontend/widgets/bottom_nav.dart'; // Import your BottomNav
 
 class HomeScreen extends ConsumerStatefulWidget {
