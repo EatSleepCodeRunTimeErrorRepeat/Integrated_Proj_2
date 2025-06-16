@@ -19,7 +19,7 @@ pluginManagement {
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
     // FIX: Updated the Android Gradle Plugin version to resolve the build error.
-    id "com.android.application" version "8.2.1" apply false
+    id "com.android.application" version "8.3.0" apply false
     // FIX: Updated the Kotlin version to a more recent, compatible version.
     id "org.jetbrains.kotlin.android" version "1.9.23" apply false
 }

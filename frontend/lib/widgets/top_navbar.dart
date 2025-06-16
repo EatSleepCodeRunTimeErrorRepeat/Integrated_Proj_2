@@ -1,43 +1,66 @@
-// lib/widgets/top_navbar.dart
-
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/settings/settings_screen.dart';
 import 'package:frontend/screens/tips/energy_tips_screen.dart';
 import 'package:frontend/utils/app_theme.dart';
 
 class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
-  // Flag to conditionally show a back button instead of the settings icon
   final bool showBackButton;
 
   const TopNavBar({super.key, this.showBackButton = false});
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      // The leading widget (on the left) is now conditional
-      leading: showBackButton
-          ? const BackButton(color: Colors.white)
-          : IconButton(
-              icon: Image.asset('assets/icons/settings.png',
-                  height: 28, width: 28),
-              onPressed: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen())),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 34, 20, 24),
+      decoration: const BoxDecoration(
+        color: Color(0xFF356C33), // Green background
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Settings Icon with navigation logic
+          GestureDetector(
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen())),
+            child: Padding(
+              padding:
+                  const EdgeInsets.only(top: 12.0), // Move down by 12 pixels
+              child: Image.asset(
+                'assets/icons/settings.png', // Your custom settings icon
+                height: 47,
+                width: 47,
+              ),
             ),
-      // This prevents a default back button from appearing when we don't want it
-      automaticallyImplyLeading: false,
-      backgroundColor: AppTheme.primaryGreen,
-      elevation: 4,
-      actions: [
-        // The energy tips button remains as an action on the right
-        IconButton(
-          icon: Image.asset('assets/icons/EnergyTips.png',
-              height: 28, width: 28, color: Colors.white),
-          onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => EnergyTipsScreen(selectedDate: DateTime.now()))),
-        ),
-      ],
+          ),
+          // Add a Spacer to prevent the icons from overlapping
+          Spacer(),
+          // Energy Tips Icon with navigation logic
+          GestureDetector(
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) =>
+                        EnergyTipsScreen(selectedDate: DateTime.now()))),
+            child: Padding(
+              padding:
+                  const EdgeInsets.only(top: 12.0), // Move down by 12 pixels
+              child: Image.asset(
+                'assets/icons/EnergyTipsEdit.png', // Your custom energy tips icon
+                height: 43,
+                width: 43,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

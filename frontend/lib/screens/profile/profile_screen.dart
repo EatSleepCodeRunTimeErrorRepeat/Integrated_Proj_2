@@ -1,5 +1,3 @@
-// lib/screens/profile/profile_screen.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +6,11 @@ import 'package:frontend/screens/provider/provider_selection_screen.dart';
 import 'package:frontend/utils/app_theme.dart';
 import 'package:frontend/widgets/top_navbar.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:frontend/widgets/bottom_nav.dart'; // Import your BottomNav
+
+// Import the screens for navigation
+import 'package:frontend/screens/schedule/schedule_screen.dart'; // Import ScheduleScreen
+import 'package:frontend/screens/home/home_screen.dart'; // Import HomeScreen
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final bool fromSettings;
@@ -36,8 +39,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    // FIX: Awaited the dialog and then checked if the context is still mounted.
     await showDialog<void>(
+      // Password change dialog
       context: context,
       builder: (BuildContext dialogContext) {
         return Consumer(builder: (context, ref, child) {
@@ -54,19 +57,72 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           });
 
           return AlertDialog(
-            title: const Text('Confirm Password'),
+            backgroundColor:
+                const Color(0xFFF8F2E5), // Background color for the container
+            title: const Text(
+              'Confirm Password',
+              style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16),
+            ),
             content: Form(
               key: formKey,
-              child: TextFormField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(hintText: 'Enter your password'),
-                validator: (value) => (value == null || value.isEmpty) ? 'Password is required' : null,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12), // Rounded corners
+                ),
+                child: TextFormField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    hintText: 'Enter your password',
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 14, horizontal: 12), // Content padding
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                          color: Colors.grey.shade300,
+                          width: 2), // Border with more visibility
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          BorderSide(color: Colors.grey.shade300, width: 2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                          color: AppTheme.primaryGreen,
+                          width: 2), // More prominent border color
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: AppTheme.primaryGreen),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: AppTheme.primaryGreen),
+                    ),
+                  ),
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Password is required'
+                      : null,
+                ),
               ),
             ),
             actions: <Widget>[
               TextButton(
-                child: const Text('Cancel'),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                      color: AppTheme
+                          .primaryGreen), // Cancel button in AppTheme.green
+                ),
                 onPressed: () => Navigator.of(dialogContext).pop(),
               ),
               ElevatedButton(
@@ -77,15 +133,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           final success = await ref
                               .read(authProvider.notifier)
                               .verifyPassword(passwordController.text);
-                          // FIX: Check for mounted context before using it.
                           if (!dialogContext.mounted) return;
                           if (success) {
-                            Navigator.of(dialogContext).pop(); // Close dialog
-                            Navigator.push(dialogContext, MaterialPageRoute(
-                                builder: (_) => const ProviderSelectionScreen()));
+                            Navigator.of(dialogContext).pop();
+                            Navigator.push(
+                                dialogContext,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const ProviderSelectionScreen()));
                           }
                         }
                       },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(120, 40), // Smaller verify button
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 child: authState.isLoading
                     ? const SizedBox(
                         width: 20,
@@ -112,80 +176,97 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       appBar: TopNavBar(
         showBackButton: widget.fromSettings,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: Column(
-          children: [
-            Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                CircleAvatar(
-                  radius: 54,
-                  backgroundImage: _avatarImage != null
-                      ? FileImage(_avatarImage!)
-                      : const AssetImage('assets/images/avatar.png')
-                          as ImageProvider,
-                ),
-                GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryGreen,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    padding: const EdgeInsets.all(5),
-                    child: const Icon(Icons.edit, color: Colors.white, size: 20),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 20.0),
+              child: Column(
+                children: [
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: 54,
+                        backgroundImage: _avatarImage != null
+                            ? FileImage(_avatarImage!)
+                            : const AssetImage('assets/images/avatar.png')
+                                as ImageProvider,
+                      ),
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryGreen,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          padding: const EdgeInsets.all(5),
+                          child: const Icon(Icons.edit,
+                              color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(user.name,
-                style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Poppins')),
-            const SizedBox(height: 40),
-            _InfoField(
-              icon: Icons.email_outlined,
-              label: 'Email',
-              value: user.email,
-            ),
-            GestureDetector(
-              onTap: _showPasswordDialog,
-              child: _InfoField(
-                icon: Icons.lightbulb_outline,
-                label: 'Electricity Provider',
-                value: user.provider ?? 'Not Set',
-                isEditable: true,
+                  const SizedBox(height: 12),
+                  Text(user.name,
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Poppins')),
+                  const SizedBox(height: 40),
+                  _InfoField(
+                    icon: Icons.email_outlined,
+                    label: 'Email',
+                    value: user.email,
+                  ),
+                  GestureDetector(
+                    onTap: _showPasswordDialog,
+                    child: _InfoField(
+                      icon: Icons.lightbulb_outline, // Light bulb icon
+                      label: 'Electricity Provider',
+                      value: user.provider ?? 'Not Set',
+                      isEditable: true,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 40),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: ElevatedButton(
-                onPressed: _showPasswordDialog,
-                child: const Text('Change Provider'),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+            child: OutlinedButton(
+              onPressed: () => ref.read(authProvider.notifier).logout(),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                side: const BorderSide(
+                    color: AppTheme.primaryGreen), // Use AppTheme color
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
+              child: const Text("Logout",
+                  style: TextStyle(color: AppTheme.primaryGreen, fontSize: 16)),
             ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: OutlinedButton(
-                onPressed: () => ref.read(authProvider.notifier).logout(),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                  side: const BorderSide(color: AppTheme.peakRed),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text("Logout",
-                    style: TextStyle(color: AppTheme.peakRed, fontSize: 16)),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNav(
+        currentIndex: 2, // ProfileScreen index
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ScheduleScreen()),
+            );
+          } else if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen()),
+            );
+          } else {
+            // ProfileScreen (no action required)
+          }
+        },
       ),
     );
   }
@@ -226,7 +307,7 @@ class _InfoField extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(icon, color: Colors.grey.shade600),
+                Icon(icon, color: Colors.grey.shade600), // Light bulb icon here
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(value,
@@ -234,8 +315,9 @@ class _InfoField extends StatelessWidget {
                           fontSize: 14, color: AppTheme.textGrey)),
                 ),
                 if (isEditable)
-                  const Icon(Icons.arrow_forward_ios,
-                      color: AppTheme.textGrey, size: 16),
+                  const Icon(Icons.edit,
+                      color: AppTheme.textGrey,
+                      size: 16), // Pencil icon for edit
               ],
             ),
           ),

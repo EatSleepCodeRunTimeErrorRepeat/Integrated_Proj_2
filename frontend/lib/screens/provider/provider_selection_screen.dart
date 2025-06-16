@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/auth_provider.dart';
@@ -15,13 +16,10 @@ class _ProviderSelectionScreenState
     extends ConsumerState<ProviderSelectionScreen> {
   String? hoveredProvider;
 
-  // This function now correctly calls the provider and handles navigation.
   Future<void> _handleProviderSelection(String provider) async {
-    // Call the correct provider method which handles the backend call and state update
     final success =
         await ref.read(authProvider.notifier).updateProvider(provider);
 
-    // After the async call, check if the widget is still mounted before navigating.
     if (success && mounted) {
       if (Navigator.canPop(context)) {
         Navigator.of(context).pop();
@@ -31,7 +29,6 @@ class _ProviderSelectionScreenState
 
   @override
   Widget build(BuildContext context) {
-    // Listen for errors from the auth provider to show a snackbar
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.error != null && previous?.error != next.error) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -52,107 +49,91 @@ class _ProviderSelectionScreenState
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.start, // Move content up
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 30),
-              Image.asset(
-                'assets/icons/Electricity Icon.png',
-                height: 70,
-                width: 70,
-                fit: BoxFit.contain,
+              const SizedBox(height: 20), // Reduce space at the top
+              Center(
+                child: Image.asset(
+                  'assets/icons/Electricity Icon.png',
+                  height: 70,
+                  width: 70,
+                  fit: BoxFit.contain,
+                ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Select your\nprovider',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Poppins',
-                  color: Color(0xFF1B5E20),
-                ),
-              ),
-              // Use Expanded to allow the cards to take up vertical space
-              // and push the 'Click Here' text to the bottom.
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 30),
-                        _buildProviderCard(
-                          id: 'MEA',
-                          logo: 'assets/images/MEALogo.png',
-                          footer: 'Metropolitan Electricity Authority',
-                          footerColor: Colors.orange.shade700,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildProviderCard(
-                          id: 'PEA',
-                          logo: 'assets/images/PEALogo.png',
-                          footer: 'Provincial Electricity Authority',
-                          footerColor: Colors.purple.shade700,
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
+              const SizedBox(
+                width: 300,
+                height: 100,
+                child: Text(
+                  'Select your\nprovider',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
+                    color: Color(0xFF1B5E20),
                   ),
                 ),
               ),
-              // This is the "Don't know" text at the bottom.
-              if (!authState.isLoading) // Hide button while loading
-                GestureDetector(
-                  // You already have a navigation for this, so this is correct
-                  onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ProviderInfoScreen())),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 30.0, top: 10.0),
-                    child: Text.rich(
-                      TextSpan(
-                        text: "Don't know your provider? ",
-                        style: const TextStyle(
-                          fontFamily: 'Urbanist',
-                          fontWeight: FontWeight.w500,
-                          fontSize: 15,
-                          color: Colors.black,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: "Click Here",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade800,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              // Show a loading indicator if the state is loading
-              if (authState.isLoading)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 30.0, top: 20.0),
-                  child: CircularProgressIndicator(),
-                )
+              const SizedBox(
+                  height: 30), // Reduce space between header and cards
+              buildProviderCard(
+                id: 'MEA',
+                logo: 'assets/images/MEALogo.png',
+                footer: 'Metropolitan Electricity Authority',
+                footerColor: Colors.orange.shade700,
+              ),
+              const SizedBox(
+                  height:
+                      40), // Reduce space between the first and second cards
+              buildProviderCard(
+                id: 'PEA',
+                logo: 'assets/images/PEALogo.png',
+                footer: 'Provincial Electricity Authority',
+                footerColor: Colors.purple.shade700,
+              ),
             ],
+          ),
+        ),
+      ),
+      bottomSheet: Padding(
+        padding: const EdgeInsets.only(bottom: 30.0, top: 10.0),
+        child: GestureDetector(
+          onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const ProviderInfoScreen())),
+          child: Text.rich(
+            TextSpan(
+              text: "Don't know your provider? ",
+              style: const TextStyle(
+                fontFamily: 'Urbanist',
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+                color: Colors.black,
+              ),
+              children: [
+                TextSpan(
+                  text: "Click Here",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade800,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // This is your desired card UI, now integrated correctly.
-  Widget _buildProviderCard({
+  Widget buildProviderCard({
     required String id,
     required String logo,
     required String footer,
     required Color footerColor,
   }) {
-    // Use the hoveredProvider state for the selection effect.
     final bool isSelected = hoveredProvider == id;
 
     return MouseRegion(
@@ -174,7 +155,7 @@ class _ProviderSelectionScreenState
           onTap: () => _handleProviderSelection(id),
           child: Container(
             width: 200,
-            height: 220,
+            height: 230,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFF8F2E5),
@@ -197,10 +178,15 @@ class _ProviderSelectionScreenState
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Image.asset(logo, fit: BoxFit.contain),
+                    child: Image.asset(
+                      logo,
+                      fit: BoxFit.contain,
+                      height: 120, // Adjusted logo height
+                      width: 120, // Adjusted logo width
+                    ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 12),
                 Container(
                   width: 170,
                   height: 50,

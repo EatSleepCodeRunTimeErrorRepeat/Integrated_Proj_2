@@ -48,7 +48,7 @@ dependencies:
   table_calendar: ^3.2.0 # For displaying a calendar in the app
   image_picker: ^1.1.2 # For picking images from the device
   google_sign_in: ^6.2.1 # For Google Sign-In functionality
-  google_mobile_ads: ^2.4.0 # For displaying Google Mobile Ads in the app
+  google_mobile_ads: ^5.0.0 # For displaying Google Mobile Ads in the app
 
 dev_dependencies:
   flutter_test:

@@ -140,18 +140,25 @@ class AuthProvider extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final response = await _apiService.login(email, password);
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         await _appDataBox.put('accessToken', data['accessToken']);
         await fetchUserProfile();
         _ref.invalidate(homeProvider);
       } else {
+        // This block runs for errors like "Invalid Credentials"
+
+        // --- THIS IS THE NEW DEBUGGING LINE ---
+        // It will print the exact server error to your console.
+        print('Backend Error: ${response.body}');
+
         final errorData = jsonDecode(response.body);
-        // This handles backend errors like "Invalid credentials"
-        state = state.copyWith(
-            isLoading: false, error: errorData['Invalid credentials']);
+        // This is the fix from before. Please ensure it's using 'message'.
+        state = state.copyWith(isLoading: false, error: errorData['message']);
       }
     } catch (e) {
+      // This block runs if the app can't connect to the server at all.
       state = state.copyWith(
           isLoading: false,
           error: "Network Error: Could not connect to the server.");

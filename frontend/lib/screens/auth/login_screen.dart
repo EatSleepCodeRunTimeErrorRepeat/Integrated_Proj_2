@@ -116,9 +116,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     : const Text('Login'),
               ),
               const SizedBox(height: 16),
-              ElevatedButton.icon(
-                icon: Image.asset('assets/icons/Google.png', height: 24.0),
-                label: const Text('Sign in with Google'),
+
+              // "Or Login with" text with dashed lines
+              Row(
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: Color.fromARGB(255, 145, 149, 158),
+                      thickness: 1,
+                      endIndent: 10, // Adjust space before the text
+                    ),
+                  ),
+                  const Text(
+                    'Or Login with',
+                    style: TextStyle(
+                      fontFamily:
+                          'Urbanist', // Ensure this font is in your pubspec.yaml
+                      fontWeight: FontWeight.w600, // Semibold
+                      fontSize: 14, // Font size 14
+                      color: Color(0xFF6A707C), // Color #6A707C
+                    ),
+                  ),
+                  Expanded(
+                    child: Divider(
+                      color: Colors.black,
+                      thickness: 1,
+                      indent: 10, // Adjust space after the text
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Google sign-in button
+              ElevatedButton(
                 onPressed: authState.isLoading
                     ? null
                     : () => ref.read(authProvider.notifier).signInWithGoogle(),
@@ -126,9 +157,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
                   side: const BorderSide(color: AppTheme.lightGrey),
+                  padding: const EdgeInsets.all(16.0),
                 ),
+                child: authState.isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Image.asset('assets/icons/Google.png', height: 24.0),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 36),
               Center(
                 child: GestureDetector(
                   // FIX: Changed to Navigator.push to allow returning to the login screen
@@ -139,14 +174,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Text.rich(
                     TextSpan(
                       text: "Don't have an account? ",
-                      style: const TextStyle(fontSize: 15, color: Colors.black),
+                      style: TextStyle(
+                        fontFamily: 'Urbanist',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        color: Color.fromARGB(255, 0, 0, 0),
+                      ),
                       children: [
                         TextSpan(
                           text: "Register Now",
                           style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryGreen,
-                              decoration: TextDecoration.underline),
+                            fontFamily: 'Urbanist',
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: AppTheme.primaryGreen,
+                          ),
                         ),
                       ],
                     ),
