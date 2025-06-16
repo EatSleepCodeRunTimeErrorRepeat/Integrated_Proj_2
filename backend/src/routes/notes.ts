@@ -1,6 +1,8 @@
 import express, { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { protect, AuthRequest } from '../middleware/authMiddleware';
+// FIX: Import moment-timezone to handle dates reliably
+import moment from 'moment-timezone';
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -17,7 +19,13 @@ router.post('/', protect, async (req: AuthRequest, res: Response): Promise<void>
     }
 
     const newNote = await prisma.note.create({
-      data: { content, peakPeriod, date: new Date(date), authorId: authorId },
+      data: {
+        content,
+        peakPeriod,
+        // FIX: Explicitly interpret the incoming date string as UTC
+        date: moment.tz(date, 'UTC').toDate(),
+        authorId: authorId,
+      },
     });
     res.status(201).json(newNote);
   } catch (error) {
@@ -59,7 +67,6 @@ router.get('/', protect, async (req: AuthRequest, res: Response): Promise<void> 
 router.put('/:noteId', protect, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { noteId } = req.params;
-    // FIX: Destructure date from the request body
     const { content, peakPeriod, date } = req.body;
     const authorId = req.user?.userId;
 
@@ -75,18 +82,18 @@ router.put('/:noteId', protect, async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    // FIX: Conditionally add the date to the update payload
     const dataToUpdate: { content: string; peakPeriod: string; date?: Date } = {
       content,
       peakPeriod,
     };
     if (date) {
-      dataToUpdate.date = new Date(date);
+      // FIX: Explicitly interpret the incoming date string as UTC
+      dataToUpdate.date = moment.tz(date, 'UTC').toDate();
     }
 
     const updatedNote = await prisma.note.update({
       where: { id: noteId },
-      data: dataToUpdate, // Use the new data object
+      data: dataToUpdate,
     });
 
     res.status(200).json(updatedNote);

@@ -13,6 +13,7 @@ class AppTheme {
   static const Color adGrey = Color(0xFFABABAB);
   static const Color peakRedBackground = Color(0xFFFDEBEB);
   static const Color offPeakGreenBackground = Color(0xFFEBF9F3);
+  static const Color holidayBlue = Color(0xFF4A90E2);
 
   static final ThemeData lightTheme = ThemeData(
     scaffoldBackgroundColor: background,

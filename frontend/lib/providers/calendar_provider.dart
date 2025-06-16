@@ -41,6 +41,22 @@ final schedulesProvider =
   }
 });
 
+final holidayProvider = Provider.autoDispose<List<DateTime>>((ref) {
+  final schedulesAsync = ref.watch(schedulesProvider);
+
+  return schedulesAsync.when(
+    data: (schedules) {
+      // A holiday is a schedule for a specific date that is not a peak day.
+      return schedules
+          .where((s) => s.specificDate != null && !s.isPeak)
+          .map((s) => s.specificDate!)
+          .toList();
+    },
+    loading: () => [],
+    error: (e, s) => [],
+  );
+});
+
 // --- REFACTORED allNotesProvider ---
 // This StateNotifier will manage the state of all notes.
 class AllNotesNotifier extends StateNotifier<AsyncValue<List<Note>>> {

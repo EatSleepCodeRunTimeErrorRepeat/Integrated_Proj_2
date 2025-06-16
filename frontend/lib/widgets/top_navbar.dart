@@ -1,7 +1,8 @@
+// lib/widgets/top_navbar.dart
+
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/settings/settings_screen.dart';
 import 'package:frontend/screens/tips/energy_tips_screen.dart';
-import 'package:frontend/utils/app_theme.dart';
 
 class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
@@ -41,7 +42,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
           // Add a Spacer to prevent the icons from overlapping
-          Spacer(),
+          const Spacer(),
           // Energy Tips Icon with navigation logic
           GestureDetector(
             onTap: () => Navigator.push(

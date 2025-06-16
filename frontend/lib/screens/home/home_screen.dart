@@ -1,10 +1,10 @@
+// lib/screens/home/home_screen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/home_provider.dart';
-import 'package:frontend/screens/schedule/schedule_screen.dart';
-import 'package:frontend/screens/profile/profile_screen.dart';
 import 'package:frontend/utils/app_theme.dart';
 import 'package:frontend/widgets/tips_carousel_widget.dart';
 import 'package:frontend/widgets/top_navbar.dart';
@@ -12,7 +12,6 @@ import 'package:frontend/widgets/ad_banner_widget.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:frontend/widgets/adsense_widget_stub.dart'
     if (dart.library.html) 'package:frontend/widgets/adsense_widget_web.dart';
-import 'package:frontend/widgets/bottom_nav.dart'; // Import your BottomNav
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -24,38 +23,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _countdownTimer;
   int _secondsRemaining = 0;
-  int _currentIndex = 1; // Track the current selected index of BottomNav
-
-  // Method to handle tab selection in BottomNav
-  void _onBottomNavTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-
-    // Handle navigation based on selected index
-    switch (_currentIndex) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ScheduleScreen()),
-        );
-        break;
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-        );
-        break;
-      default:
-        break;
-    }
-  }
 
   @override
   void didChangeDependencies() {
@@ -117,6 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final peakStatusAsync = ref.watch(peakStatusProvider);
     final user = ref.watch(authProvider).user;
 
+    // This is now the only Scaffold. It does NOT have a bottomNavigationBar.
     return Scaffold(
       appBar: const TopNavBar(),
       body: RefreshIndicator(
@@ -193,10 +161,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNav(
-        currentIndex: _currentIndex,
-        onTap: _onBottomNavTapped,
       ),
     );
   }

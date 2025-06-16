@@ -76,7 +76,6 @@ class NotesNotifier extends StateNotifier<NotesState> {
     }
   }
 
-  // FIX: Added return type and robust error handling
   Future<bool> addNote(String content, String peakPeriod, DateTime date) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -87,8 +86,13 @@ class NotesNotifier extends StateNotifier<NotesState> {
         state = state.copyWith(isLoading: false);
         return true;
       } else {
+        // MODIFICATION: Log the specific error from the server
         final errorData = jsonDecode(response.body);
-        state = state.copyWith(isLoading: false, error: errorData['message']);
+        final errorMessage = errorData['message'] ??
+            'Failed to create note. Unknown server error.';
+        // This will print the error to your debug console
+        print('SERVER ERROR on note creation: $errorMessage');
+        state = state.copyWith(isLoading: false, error: errorMessage);
         return false;
       }
     } catch (e) {
