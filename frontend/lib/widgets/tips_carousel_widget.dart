@@ -9,16 +9,18 @@ class TipsCarouselWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Get notes from the simplified homeProvider
+    // Get the notes from the simple homeProvider
     final homeState = ref.watch(homeProvider);
-    // Get peak status from the new peakStatusProvider
+    // Get the peak status from the peakStatusProvider
     final peakStatusAsync = ref.watch(peakStatusProvider);
 
-    // Use .when to safely access the async value
+    // Use .when to safely handle the loading/error/data states of the peak status
     return peakStatusAsync.when(
       data: (status) {
-        final isPeak = status['isPeak'] ?? false;
+        final isPeak = status['isPeak'] as bool? ?? false;
         final currentPeakStatus = isPeak ? 'ON_PEAK' : 'OFF_PEAK';
+
+        // Filter the notes to only show tips relevant to the current period
         final relevantNotes = homeState.notes
             .where((note) => note.peakPeriod == currentPeakStatus)
             .toList();
@@ -28,8 +30,8 @@ class TipsCarouselWidget extends ConsumerWidget {
             height: 59,
             margin: const EdgeInsets.symmetric(horizontal: 24),
             alignment: Alignment.center,
-            child: Text(
-                'No ${isPeak ? "On-Peak" : "Off-Peak"} tips available for today.'),
+            child:
+                Text('No ${isPeak ? "On-Peak" : "Off-Peak"} tips available.'),
           );
         }
 
@@ -44,7 +46,7 @@ class TipsCarouselWidget extends ConsumerWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0x0F545454),
+                  color: const Color(0x0F545454), // ~5% dark grey
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -65,8 +67,8 @@ class TipsCarouselWidget extends ConsumerWidget {
           ),
         );
       },
-      loading: () =>
-          const SizedBox(height: 59), // Return an empty box while loading
+      // While the peak status is loading, show an empty container.
+      loading: () => const SizedBox(height: 59),
       error: (e, s) => const SizedBox(height: 59),
     );
   }

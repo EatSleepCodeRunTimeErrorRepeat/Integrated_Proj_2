@@ -1,3 +1,5 @@
+// lib/screens/auth/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/auth_provider.dart';
@@ -12,9 +14,14 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  // A GlobalKey to identify the Form and trigger validation.
   final _formKey = GlobalKey<FormState>();
+
+  // Controllers to read the input from text fields.
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // Local state to manage password visibility.
   bool _obscurePassword = true;
 
   @override
@@ -24,19 +31,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  /// --- LOGIC METHODS ---
+
+  /// Validates the form and calls the login method in the auth provider.
   Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      // Hide keyboard
-      FocusScope.of(context).unfocus();
-      await ref.read(authProvider.notifier).login(
-            _emailController.text.trim(),
-            _passwordController.text.trim(),
-          );
+    // Validate the form fields. If not valid, do nothing.
+    if (!_formKey.currentState!.validate()) {
+      return;
     }
+    // Hide the keyboard.
+    FocusScope.of(context).unfocus();
+
+    // Use ref.read to call the login function on our AuthProvider.
+    await ref.read(authProvider.notifier).login(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
   }
+
+  /// Calls the Google Sign-In method in the auth provider.
+  Future<void> _signInWithGoogle() async {
+    FocusScope.of(context).unfocus();
+    await ref.read(authProvider.notifier).signInWithGoogle();
+  }
+
+  /// --- UI WIDGETS ---
 
   @override
   Widget build(BuildContext context) {
+    // Use ref.listen to perform side-effects like showing a SnackBar for errors.
+    // This doesn't cause the widget to rebuild.
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.error != null && previous?.error != next.error) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -45,11 +69,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             backgroundColor: AppTheme.peakRed,
           ),
         );
-        // It's good practice to clear the error after showing it
+        // Clear the error after showing it so it doesn't pop up again.
         ref.read(authProvider.notifier).clearError();
       }
     });
 
+    // Use ref.watch to get the current state and rebuild the UI when it changes.
     final authState = ref.watch(authProvider);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
@@ -80,6 +105,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       controller: _emailController,
                       decoration:
                           const InputDecoration(hintText: 'Enter your email'),
+                      keyboardType: TextInputType.emailAddress,
                       validator: (value) =>
                           (value == null || !value.contains('@'))
                               ? 'Please enter a valid email'
@@ -116,79 +142,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     : const Text('Login'),
               ),
               const SizedBox(height: 16),
-
-              // "Or Login with" text with dashed lines
               Row(
-                children: [
+                children: const [
                   Expanded(
-                    child: Divider(
-                      color: Color.fromARGB(255, 145, 149, 158),
-                      thickness: 1,
-                      endIndent: 10, // Adjust space before the text
-                    ),
-                  ),
-                  const Text(
-                    'Or Login with',
-                    style: TextStyle(
-                      fontFamily:
-                          'Urbanist', // Ensure this font is in your pubspec.yaml
-                      fontWeight: FontWeight.w600, // Semibold
-                      fontSize: 14, // Font size 14
-                      color: Color(0xFF6A707C), // Color #6A707C
-                    ),
-                  ),
+                      child: Divider(
+                          color: Color(0xFF91959E),
+                          thickness: 1,
+                          endIndent: 10)),
+                  Text('Or Login with',
+                      style: TextStyle(
+                          fontFamily: 'Urbanist',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Color(0xFF6A707C))),
                   Expanded(
-                    child: Divider(
-                      color: Colors.black,
-                      thickness: 1,
-                      indent: 10, // Adjust space after the text
-                    ),
-                  ),
+                      child: Divider(
+                          color: Color(0xFF91959E), thickness: 1, indent: 10)),
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Google sign-in button
               ElevatedButton(
-                onPressed: authState.isLoading
-                    ? null
-                    : () => ref.read(authProvider.notifier).signInWithGoogle(),
+                onPressed: authState.isLoading ? null : _signInWithGoogle,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  side: const BorderSide(color: AppTheme.lightGrey),
-                  padding: const EdgeInsets.all(16.0),
-                ),
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    side: const BorderSide(color: AppTheme.lightGrey)),
                 child: authState.isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const SizedBox.shrink()
                     : Image.asset('assets/icons/Google.png', height: 24.0),
               ),
               const SizedBox(height: 36),
               Center(
                 child: GestureDetector(
-                  // FIX: Changed to Navigator.push to allow returning to the login screen
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (_) => const RegisterScreen())),
-                  child: Text.rich(
+                  child: const Text.rich(
                     TextSpan(
                       text: "Don't have an account? ",
                       style: TextStyle(
-                        fontFamily: 'Urbanist',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15,
-                        color: Color.fromARGB(255, 0, 0, 0),
-                      ),
+                          fontFamily: 'Urbanist',
+                          fontWeight: FontWeight.w500,
+                          fontSize: 15,
+                          color: Colors.black),
                       children: [
                         TextSpan(
                           text: "Register Now",
                           style: TextStyle(
-                            fontFamily: 'Urbanist',
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            color: AppTheme.primaryGreen,
-                          ),
+                              fontFamily: 'Urbanist',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: AppTheme.primaryGreen),
                         ),
                       ],
                     ),

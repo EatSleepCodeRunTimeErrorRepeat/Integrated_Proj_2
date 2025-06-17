@@ -5,55 +5,37 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/models/note_model.dart';
 import 'package:frontend/providers/auth_provider.dart';
 
-// NEW: A dedicated provider to get the live peak status from our backend.
-// It automatically handles async logic (loading, data, error).
+// This FutureProvider is responsible for fetching the live peak status from the backend.
+// It automatically handles loading and error states for us in the UI.
+// It also automatically re-runs if the user logs in or out.
 final peakStatusProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
-  // This makes the provider re-run if the user logs out or changes.
   ref.watch(authProvider.select((auth) => auth.user?.id));
 
   final apiService = ref.watch(apiServiceProvider);
   final response = await apiService.getPeakStatus();
 
   if (response.statusCode == 200) {
-    return jsonDecode(response.body);
+    return jsonDecode(response.body) as Map<String, dynamic>;
   } else {
-    // Propagate the error message from the backend to the UI.
     final error = jsonDecode(response.body);
     throw Exception(error['message'] ?? 'Failed to load peak status');
   }
 });
 
-// The HomeProvider is now only responsible for fetching notes. No more timers!
+// This provider fetches the notes for today to be displayed in the tips carousel.
 final homeProvider =
     StateNotifierProvider.autoDispose<HomeProvider, HomeState>((ref) {
-  // This also depends on the user so it can be refreshed easily.
   ref.watch(authProvider.select((auth) => auth.user?.id));
   return HomeProvider(ref);
 });
 
-// State is simplified: only manages notes for the tips carousel.
+// The state for our notes.
 class HomeState {
-  final bool isLoading;
-  final String? error;
   final List<Note> notes;
-
-  HomeState({
-    this.isLoading = true,
-    this.error,
-    this.notes = const [],
-  });
-
-  HomeState copyWith({
-    bool? isLoading,
-    String? error,
-    List<Note>? notes,
-  }) {
-    return HomeState(
-      isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
-      notes: notes ?? this.notes,
-    );
+  HomeState({this.notes = const []});
+  HomeState copyWith({List<Note>? notes}) {
+    return HomeState(notes: notes ?? this.notes);
   }
 }
 
@@ -61,27 +43,24 @@ class HomeProvider extends StateNotifier<HomeState> {
   final Ref _ref;
 
   HomeProvider(this._ref) : super(HomeState()) {
-    fetchNotes();
+    if (_ref.read(authProvider).isAuthenticated) {
+      fetchTodaysNotes();
+    }
   }
 
-  // The provider's only job is to fetch today's notes for the "Tips Carousel".
-  Future<void> fetchNotes() async {
-    state = state.copyWith(isLoading: true);
+  Future<void> fetchTodaysNotes() async {
     try {
       final apiService = _ref.read(apiServiceProvider);
-      // Fetches notes for the current date.
       final response = await apiService.getNotesForDate(DateTime.now());
 
       if (response.statusCode == 200) {
         final notesData = (jsonDecode(response.body) as List)
             .map((data) => Note.fromJson(data))
             .toList();
-        state = state.copyWith(isLoading: false, notes: notesData);
-      } else {
-        throw Exception('Failed to load notes for tips carousel');
+        state = state.copyWith(notes: notesData);
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      // It's okay if this fails silently, the tips carousel will just be empty.
     }
   }
 }

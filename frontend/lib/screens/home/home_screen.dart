@@ -1,15 +1,15 @@
 // lib/screens/home/home_screen.dart
 
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/home_provider.dart';
 import 'package:frontend/utils/app_theme.dart';
 import 'package:frontend/widgets/tips_carousel_widget.dart';
-import 'package:frontend/widgets/top_navbar.dart';
-import 'package:frontend/widgets/ad_banner_widget.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:frontend/widgets/ad_banner_widget.dart';
 import 'package:frontend/widgets/adsense_widget_stub.dart'
     if (dart.library.html) 'package:frontend/widgets/adsense_widget_web.dart';
 
@@ -25,11 +25,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _secondsRemaining = 0;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
+    // Use listenManual to set up a listener on our provider.
+    // This allows us to start the timer when data is first received.
     ref.listenManual(peakStatusProvider, (previous, next) {
-      if (!next.isLoading && next.hasValue) {
-        final int timeToNextChange = next.value?['timeToNextChange'] ?? 0;
+      if (next.hasValue) {
+        final int timeToNextChange =
+            next.value?['timeToNextChange'] as int? ?? 0;
         _startUiTimer(timeToNextChange);
       }
     }, fireImmediately: true);
@@ -37,9 +40,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _startUiTimer(int initialSeconds) {
     _countdownTimer?.cancel();
-    setState(() {
-      _secondsRemaining = initialSeconds > 0 ? initialSeconds : 0;
-    });
+    if (mounted) {
+      setState(() {
+        _secondsRemaining = initialSeconds > 0 ? initialSeconds : 0;
+      });
+    }
+
+    if (initialSeconds <= 0) return;
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
@@ -50,6 +57,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       } else {
         timer.cancel();
+        // When the timer hits zero, invalidate the provider to refetch the
+        // new status from the backend, which will start a new countdown.
         if (mounted) {
           ref.invalidate(peakStatusProvider);
         }
@@ -81,14 +90,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
     final peakStatusAsync = ref.watch(peakStatusProvider);
-    final user = ref.watch(authProvider).user;
+    final user = authState.user;
 
-    // This is now the only Scaffold. It does NOT have a bottomNavigationBar.
+    ImageProvider displayImage;
+    if (authState.localAvatarPath != null) {
+      displayImage = FileImage(File(authState.localAvatarPath!));
+    } else if (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty) {
+      displayImage = NetworkImage(user.avatarUrl!);
+    } else {
+      displayImage = const AssetImage('assets/images/avatar.png');
+    }
+
     return Scaffold(
-      appBar: const TopNavBar(),
       body: RefreshIndicator(
         onRefresh: () async {
+          // Allow pull-to-refresh to refetch all data for the home screen.
           ref.invalidate(peakStatusProvider);
           ref.invalidate(homeProvider);
         },
@@ -97,18 +115,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: const EdgeInsets.symmetric(vertical: 16.0),
           child: Column(
             children: [
+              // --- Greeting Header ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 38,
-                      backgroundImage: (user?.avatarUrl != null &&
-                              user!.avatarUrl!.isNotEmpty)
-                          ? NetworkImage(user.avatarUrl!)
-                          : const AssetImage('assets/images/avatar.png')
-                              as ImageProvider,
-                    ),
+                    CircleAvatar(radius: 38, backgroundImage: displayImage),
                     const SizedBox(width: 10),
                     Flexible(
                       child: Column(
@@ -134,14 +146,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 30),
+
+              // --- Peak Status and Countdown Section ---
               peakStatusAsync.when(
-                data: (status) => Column(
-                  children: [
-                    _buildStatusCard(status['isPeak'] ?? false),
-                    const SizedBox(height: 30),
-                    _buildCountdown(status['isPeak'] ?? false),
-                  ],
-                ),
+                data: (status) {
+                  final isPeak = status['isPeak'] as bool? ?? false;
+                  return Column(
+                    children: [
+                      _buildStatusCard(isPeak),
+                      const SizedBox(height: 30),
+                      _buildCountdown(isPeak),
+                    ],
+                  );
+                },
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, stack) => Container(
                   padding: const EdgeInsets.all(16.0),
@@ -154,9 +171,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       style: const TextStyle(color: AppTheme.peakRed)),
                 ),
               ),
+
               const SizedBox(height: 24),
               const TipsCarouselWidget(),
               const SizedBox(height: 40),
+
+              // --- Ad Banner ---
               kIsWeb ? const AdsenseWidget() : const AdBannerWidget(),
             ],
           ),
@@ -198,11 +218,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildCountdown(bool isPeak) {
     final countdownText = _formatDuration(_secondsRemaining);
-    final label = isPeak
-        ? "Countdown until Off-Peak Hours"
-        : (_secondsRemaining > 0
-            ? "Countdown until On-Peak Hours"
-            : "All Off-Peak Today");
+    final label = _secondsRemaining > 0
+        ? (isPeak ? "Countdown until Off-Peak" : "Countdown until On-Peak")
+        : "All Off-Peak Today";
 
     return Column(
       children: [

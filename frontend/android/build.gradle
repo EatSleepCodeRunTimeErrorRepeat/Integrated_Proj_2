@@ -8,7 +8,6 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:8.2.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.google.gms:google-services:4.4.1'
     }
 }
 
@@ -20,20 +19,8 @@ allprojects {
 }
 
 rootProject.buildDir = '../build'
-
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-    project.evaluationDependsOn(':app')
-
-   
-    if (project.name == 'google_mobile_ads') {
-        project.afterEvaluate {
-            def androidExt = project.extensions.findByName("android")
-            if (androidExt != null) {
-                androidExt.namespace = "io.flutter.plugins.googlemobileads" 
-            }
-        }
-    }
 }
 
 tasks.register("clean", Delete) {

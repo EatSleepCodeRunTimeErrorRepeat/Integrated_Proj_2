@@ -1,30 +1,33 @@
 import express, { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { protect, AuthRequest } from '../middleware/authMiddleware';
-// FIX: Import moment-timezone to handle dates reliably
 import moment from 'moment-timezone';
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
 // --- CREATE A NEW NOTE ---
-router.post('/', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', protect, async (req: AuthRequest, res: Response) => {
   try {
     const { content, date, peakPeriod } = req.body;
-    const authorId = req.user?.userId;
+    const userId = req.user?.userId;
 
-    if (!content || !date || !authorId || !peakPeriod) {
-      res.status(400).json({ message: 'Content, date, peakPeriod, and authorId are required' });
-      return;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.provider) {
+      return res.status(400).json({ message: 'User or user provider not found.' });
+    }
+
+    if (!content || !date || !peakPeriod) {
+      return res.status(400).json({ message: 'Content, date, and peakPeriod are required' });
     }
 
     const newNote = await prisma.note.create({
       data: {
         content,
         peakPeriod,
-        // FIX: Explicitly interpret the incoming date string as UTC
+        provider: user.provider,
         date: moment.tz(date, 'UTC').toDate(),
-        authorId: authorId,
+        authorId: userId as string,
       },
     });
     res.status(201).json(newNote);
@@ -34,25 +37,71 @@ router.post('/', protect, async (req: AuthRequest, res: Response): Promise<void>
   }
 });
 
-// --- GET NOTES FOR A SPECIFIC DATE ---
-router.get('/', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+// --- NEW: SEARCH NOTES BY CONTENT ---
+// This route will be used by your search feature.
+router.get('/search', protect, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { q } = req.query; 
+
+    const user = await prisma.user.findUnique({ where: { id: userId }});
+    if (!user || !user.provider) {
+        return res.status(400).json({ message: 'User or provider not set.' });
+    }
+
+    if (!q || typeof q !== 'string') {
+      return res.status(400).json({ message: 'A search query parameter "q" is required.' });
+    }
+
+    const notes = await prisma.note.findMany({
+      where: {
+        authorId: userId,
+        provider: user.provider, // Only search notes for the current provider
+        content: {
+          contains: q,
+          mode: 'insensitive', // Case-insensitive search
+        },
+      },
+      orderBy: {
+        date: 'desc',
+      },
+    });
+
+    res.status(200).json(notes);
+  } catch (error) {
+    console.error('Search Notes Error:', error);
+    res.status(500).json({ message: 'Server error searching notes' });
+  }
+});
+
+
+// --- GET NOTES (FOR DATE RANGE OR ALL) ---
+// If you call GET /api/notes, it gets all notes for the provider.
+// If you call GET /api/notes?startDate=...&endDate=..., it gets notes for that date range.
+router.get('/', protect, async (req: AuthRequest, res: Response) => {
   try {
     const authorId = req.user?.userId;
     const { startDate, endDate } = req.query;
 
-    if (!startDate || !endDate || typeof startDate !== 'string' || typeof endDate !== 'string' || !authorId) {
-      res.status(400).json({ message: 'A valid startDate and endDate query parameter are required' });
-      return;
+    const user = await prisma.user.findUnique({ where: { id: authorId } });
+    if (!user || !user.provider) {
+      return res.status(400).json({ message: 'User or user provider not found.' });
     }
-    
+
+    const whereClause: any = {
+      authorId: authorId,
+      provider: user.provider,
+    };
+
+    if (startDate && endDate && typeof startDate === 'string' && typeof endDate === 'string') {
+      whereClause.date = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      };
+    }
+
     const notes = await prisma.note.findMany({
-      where: { 
-        authorId: authorId, 
-        date: { 
-          gte: new Date(startDate), 
-          lte: new Date(endDate) 
-        } 
-      },
+      where: whereClause,
       orderBy: { date: 'asc' },
     });
 
@@ -63,23 +112,22 @@ router.get('/', protect, async (req: AuthRequest, res: Response): Promise<void> 
   }
 });
 
+
 // --- UPDATE A NOTE ---
-router.put('/:noteId', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+router.put('/:noteId', protect, async (req: AuthRequest, res: Response) => {
   try {
     const { noteId } = req.params;
     const { content, peakPeriod, date } = req.body;
     const authorId = req.user?.userId;
 
     if (!content || !peakPeriod) {
-      res.status(400).json({ message: 'Content and peakPeriod are required' });
-      return;
+      return res.status(400).json({ message: 'Content and peakPeriod are required' });
     }
 
     const note = await prisma.note.findUnique({ where: { id: noteId } });
 
     if (!note || note.authorId !== authorId) {
-      res.status(404).json({ message: 'Note not found or user not authorized' });
-      return;
+      return res.status(404).json({ message: 'Note not found or user not authorized' });
     }
 
     const dataToUpdate: { content: string; peakPeriod: string; date?: Date } = {
@@ -87,7 +135,6 @@ router.put('/:noteId', protect, async (req: AuthRequest, res: Response): Promise
       peakPeriod,
     };
     if (date) {
-      // FIX: Explicitly interpret the incoming date string as UTC
       dataToUpdate.date = moment.tz(date, 'UTC').toDate();
     }
 
@@ -104,46 +151,24 @@ router.put('/:noteId', protect, async (req: AuthRequest, res: Response): Promise
 });
 
 // --- DELETE A NOTE ---
-router.delete('/:noteId', protect, async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-        const { noteId } = req.params;
-        const authorId = req.user?.userId;
-
-        const note = await prisma.note.findUnique({ where: { id: noteId } });
-
-        if (!note || note.authorId !== authorId) {
-            res.status(404).json({ message: 'Note not found or user not authorized' });
-            return;
-        }
-
-        await prisma.note.delete({ where: { id: noteId } });
-
-        res.status(200).json({ message: 'Note deleted successfully' });
-    } catch (error) {
-        console.error('Delete Note Error:', error);
-        res.status(500).json({ message: 'Server error deleting note' });
-    }
-});
-
-// --- GET ALL NOTES FOR A USER ---
-router.get('/all', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+router.delete('/:noteId', protect, async (req: AuthRequest, res: Response) => {
   try {
+    const { noteId } = req.params;
     const authorId = req.user?.userId;
 
-    if (!authorId) {
-      res.status(401).json({ message: 'Not authorized' });
+    const note = await prisma.note.findUnique({ where: { id: noteId } });
+
+    if (!note || note.authorId !== authorId) {
+      res.status(404).json({ message: 'Note not found or user not authorized' });
       return;
     }
-    
-    const notes = await prisma.note.findMany({
-      where: { authorId: authorId },
-      orderBy: { date: 'asc' },
-    });
 
-    res.status(200).json(notes);
+    await prisma.note.delete({ where: { id: noteId } });
+
+    res.status(200).json({ message: 'Note deleted successfully' });
   } catch (error) {
-    console.error('Fetch All Notes Error:', error);
-    res.status(500).json({ message: 'Server error fetching all notes' });
+    console.error('Delete Note Error:', error);
+    res.status(500).json({ message: 'Server error deleting note' });
   }
 });
 

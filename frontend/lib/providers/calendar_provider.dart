@@ -1,49 +1,39 @@
+// lib/providers/calendar_provider.dart
+
 import 'dart:collection';
 import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:frontend/api/api_service.dart';
 import 'package:frontend/models/note_model.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/models/peak_schedule_model.dart';
+import 'package:table_calendar/table_calendar.dart';
 
-// This provider fetches notes for a SINGLE day for the schedule list.
-final calendarProvider =
-    FutureProvider.autoDispose.family<List<Note>, DateTime>((ref, date) async {
-  final apiService = ref.watch(apiServiceProvider);
-  final response = await apiService.getNotesForDate(date);
-  if (response.statusCode == 200) {
-    final notes = (jsonDecode(response.body) as List)
-        .map((data) => Note.fromJson(data))
-        .toList();
-    return notes;
-  } else {
-    throw Exception('Failed to load notes for date');
-  }
-});
+// --- Main Providers for the Schedule Screen ---
 
-// NEW: Provider to fetch all schedules for the user's provider
 final schedulesProvider =
     FutureProvider.autoDispose<List<PeakSchedule>>((ref) async {
   final user = ref.watch(authProvider).user;
   if (user?.provider == null) {
-    return []; // Return empty list if no provider is set
+    return [];
   }
+
   final apiService = ref.watch(apiServiceProvider);
   final response = await apiService.getSchedules(user!.provider!);
+
   if (response.statusCode == 200) {
-    final schedules = (jsonDecode(response.body) as List)
+    return (jsonDecode(response.body) as List)
         .map((data) => PeakSchedule.fromJson(data))
         .toList();
-    return schedules;
   } else {
     throw Exception('Failed to load schedules');
   }
 });
 
+// --- THIS PROVIDER IS RESTORED ---
+// It watches the main schedulesProvider and extracts a simple list of holiday dates.
 final holidayProvider = Provider.autoDispose<List<DateTime>>((ref) {
   final schedulesAsync = ref.watch(schedulesProvider);
-
   return schedulesAsync.when(
     data: (schedules) {
       // A holiday is a schedule for a specific date that is not a peak day.
@@ -57,21 +47,24 @@ final holidayProvider = Provider.autoDispose<List<DateTime>>((ref) {
   );
 });
 
-// --- REFACTORED allNotesProvider ---
-// This StateNotifier will manage the state of all notes.
+final allNotesProvider =
+    StateNotifierProvider.autoDispose<AllNotesNotifier, AsyncValue<List<Note>>>(
+        (ref) {
+  ref.watch(authProvider.select((auth) => auth.user?.id));
+  return AllNotesNotifier(ref);
+});
+
 class AllNotesNotifier extends StateNotifier<AsyncValue<List<Note>>> {
   final Ref _ref;
-  late final ApiService _apiService;
-
   AllNotesNotifier(this._ref) : super(const AsyncValue.loading()) {
-    _apiService = _ref.read(apiServiceProvider);
     fetchAllNotes();
   }
 
   Future<void> fetchAllNotes() async {
     state = const AsyncValue.loading();
     try {
-      final response = await _apiService.getAllNotes();
+      final apiService = _ref.read(apiServiceProvider);
+      final response = await apiService.getAllNotes();
       if (response.statusCode == 200) {
         final notes = (jsonDecode(response.body) as List)
             .map((data) => Note.fromJson(data))
@@ -86,43 +79,21 @@ class AllNotesNotifier extends StateNotifier<AsyncValue<List<Note>>> {
   }
 }
 
-// FIX: Update the provider definition to watch the auth state
-final allNotesProvider =
-    StateNotifierProvider<AllNotesNotifier, AsyncValue<List<Note>>>((ref) {
-  // By watching the auth provider, this provider will automatically
-  // be re-created when the user logs in or out.
-  ref.watch(authProvider.select((auth) => auth.isAuthenticated));
-  return AllNotesNotifier(ref);
-});
-
-// This provider now correctly consumes the new allNotesProvider
 final calendarEventProvider =
-    Provider<LinkedHashMap<DateTime, List<Note>>>((ref) {
-  // Watch the new provider to get the async state
+    Provider.autoDispose<LinkedHashMap<DateTime, List<Note>>>((ref) {
   final allNotesAsync = ref.watch(allNotesProvider);
 
-  // Use .when to handle loading/error states gracefully
   return allNotesAsync.when(
     data: (notes) {
-      // Group notes by date when data is available
       return LinkedHashMap<DateTime, List<Note>>(
         equals: isSameDay,
         hashCode: (key) => key.day * 1000000 + key.month * 10000 + key.year,
       )..addAll(groupBy(
           notes,
           (Note note) =>
-              DateTime(note.date.year, note.date.month, note.date.day)));
+              DateTime.utc(note.date.year, note.date.month, note.date.day)));
     },
-    // Return an empty map for loading and error states
     loading: () => LinkedHashMap(),
     error: (e, s) => LinkedHashMap(),
   );
 });
-
-// Helper function for table_calendar
-bool isSameDay(DateTime? a, DateTime? b) {
-  if (a == null || b == null) {
-    return false;
-  }
-  return a.year == b.year && a.month == b.month && a.day == b.day;
-}

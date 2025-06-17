@@ -1,4 +1,3 @@
-
 # ---- Stage 1: Build Environment ----
 # Use a full Node.js image to install all dependencies and build the app
 FROM node:18-alpine AS builder
@@ -12,12 +11,11 @@ RUN npm install
 # Copy the rest of the source code
 COPY . .
 
-# Generate the Prisma Client (this now works because prisma is installed)
+# Generate the Prisma Client
 RUN npx prisma generate
 
 # Transpile TypeScript to JavaScript into the /dist folder
-RUN npm run build 
-# Note: You need to add a "build" script to your package.json: "build": "tsc"
+RUN npm run build
 
 
 # ---- Stage 2: Production Environment ----
@@ -39,5 +37,5 @@ COPY --from=builder /usr/src/app/node_modules/.prisma ./node_modules/.prisma
 # Expose the port the app runs on
 EXPOSE 8000
 
-# The command to start the app
-CMD [ "node", "dist/index.js" ]
+# The command to start the app (pointing to the correct path)
+CMD [ "node", "dist/src/index.js" ]

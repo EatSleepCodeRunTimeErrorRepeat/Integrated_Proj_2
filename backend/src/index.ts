@@ -20,6 +20,8 @@ const prisma = new PrismaClient();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // For Google form data
+// This makes files in the 'public' folder accessible via a URL.
+app.use(express.static('public'));
 
 // --- ROUTES ---
 app.get('/api/test', (req: Request, res: Response) => {

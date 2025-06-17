@@ -1,7 +1,12 @@
+# Node modules
 node_modules
-# Keep environment variables out of version control
-.env
-/dist/
 
-/src/generated/prisma
+# Production build folder
+dist
+
+# Environment variables (VERY IMPORTANT)
 .env
+
+# Prisma
+*.db
+*.db-journal

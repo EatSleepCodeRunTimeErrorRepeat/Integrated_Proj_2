@@ -1,13 +1,18 @@
+// lib/models/peak_schedule_model.dart
+
+import 'package:flutter/foundation.dart';
+
+@immutable
 class PeakSchedule {
   final String id;
   final String provider;
-  final int? dayOfWeek;
+  final int? dayOfWeek; // 0 = Sun, 1 = Mon, ..., 6 = Sat
   final DateTime? specificDate;
-  final String startTime;
-  final String endTime;
+  final String startTime; // "HH:mm"
+  final String endTime; // "HH:mm"
   final bool isPeak;
 
-  PeakSchedule({
+  const PeakSchedule({
     required this.id,
     required this.provider,
     this.dayOfWeek,
@@ -19,15 +24,15 @@ class PeakSchedule {
 
   factory PeakSchedule.fromJson(Map<String, dynamic> json) {
     return PeakSchedule(
-      id: json['id'],
-      provider: json['provider'],
-      dayOfWeek: json['dayOfWeek'],
+      id: json['id'] as String,
+      provider: json['provider'] as String,
+      dayOfWeek: json['dayOfWeek'] as int?,
       specificDate: json['specificDate'] != null
-          ? DateTime.parse(json['specificDate']).toLocal()
+          ? DateTime.parse(json['specificDate'] as String).toLocal()
           : null,
-      startTime: json['startTime'],
-      endTime: json['endTime'],
-      isPeak: json['isPeak'],
+      startTime: json['startTime'] as String,
+      endTime: json['endTime'] as String,
+      isPeak: json['isPeak'] as bool,
     );
   }
 
@@ -36,15 +41,10 @@ class PeakSchedule {
       'id': id,
       'provider': provider,
       'dayOfWeek': dayOfWeek,
-      'specificDate': specificDate?.toIso8601String(),
+      'specificDate': specificDate?.toUtc().toIso8601String(),
       'startTime': startTime,
       'endTime': endTime,
       'isPeak': isPeak,
     };
-  }
-
-  @override
-  String toString() {
-    return 'PeakSchedule{id: $id, provider: $provider, dayOfWeek: $dayOfWeek, specificDate: $specificDate, startTime: $startTime, endTime: $endTime, isPeak: $isPeak}';
   }
 }

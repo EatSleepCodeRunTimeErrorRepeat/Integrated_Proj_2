@@ -1,7 +1,6 @@
 import express, { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { protect, AuthRequest } from '../middleware/authMiddleware';
-import { createDefaultNotes } from './auth';
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -63,23 +62,22 @@ router.put('/me', protect, async (req: AuthRequest, res: Response): Promise<void
     }
 });
 
-// --- FIX: UPDATE PROVIDER (Simplified to prevent deadlocks) ---
-router.put('/me/provider', protect, async (req: AuthRequest, res: Response): Promise<void> => {
+
+// --- UPDATE PROVIDER AND RESET NOTES ---
+router.put('/me/provider', protect, async (req: AuthRequest, res: Response) => {
     try {
         const { provider } = req.body;
         const userId = req.user?.userId;
 
         if (!userId) {
-            res.status(401).json({ message: 'Not authorized' });
-            return;
+            return res.status(401).json({ message: 'Not authorized' });
         }
         if (!provider || (provider !== 'MEA' && provider !== 'PEA')) {
-            res.status(400).json({ message: 'A valid provider (MEA or PEA) is required' });
-            return;
+            return res.status(400).json({ message: 'A valid provider (MEA or PEA) is required' });
         }
         
-        // This now only performs one operation: updating the user's provider.
-        // This avoids the transaction deadlock and preserves the user's notes.
+        // This logic now ONLY updates the user's provider in the database.
+        // It does not delete or create any notes, preserving all user data.
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: { provider: provider },

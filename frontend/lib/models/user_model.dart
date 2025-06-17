@@ -1,30 +1,34 @@
 // lib/models/user_model.dart
 
+import 'package:flutter/foundation.dart';
+
+@immutable // This annotation encourages the class to be immutable.
 class User {
   final String id;
   final String email;
   final String name;
   final String? provider;
   final bool notificationsEnabled;
-  final String? avatarUrl; // <-- ADD THIS LINE
+  final String? avatarUrl;
 
-  User({
+  const User({
     required this.id,
     required this.email,
     required this.name,
     this.provider,
     required this.notificationsEnabled,
-    this.avatarUrl, // <-- ADD THIS LINE
+    this.avatarUrl,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      email: json['email'],
-      name: json['name'],
-      provider: json['provider'],
-      notificationsEnabled: json['notificationsEnabled'] ?? true,
-      avatarUrl: json['avatarUrl'], // <-- ADD THIS LINE
+      id: json['id'] as String,
+      email: json['email'] as String,
+      name: json['name'] as String,
+      provider: json['provider'] as String?,
+      // Provide a fallback in case the backend ever omits this value.
+      notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
+      avatarUrl: json['avatarUrl'] as String?,
     );
   }
 
@@ -35,7 +39,7 @@ class User {
       'name': name,
       'provider': provider,
       'notificationsEnabled': notificationsEnabled,
-      'avatarUrl': avatarUrl, // <-- ADD THIS LINE
+      'avatarUrl': avatarUrl,
     };
   }
 }

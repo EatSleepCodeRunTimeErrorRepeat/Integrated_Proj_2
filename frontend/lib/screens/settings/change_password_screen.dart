@@ -1,3 +1,5 @@
+// lib/screens/settings/change_password_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/auth_provider.dart';
@@ -41,6 +43,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           _newPasswordController.text,
         );
 
+    // Check if the widget is still in the tree before using its context.
     if (mounted && success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

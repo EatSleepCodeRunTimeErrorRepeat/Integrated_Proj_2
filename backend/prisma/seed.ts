@@ -1,8 +1,3 @@
-// =================================================================
-// File: prisma/seed.ts
-// NOTE: Please CLOSE AND RESTART your code editor (e.g. VS Code),
-//       then run `npx prisma generate` before seeding with 'npx prisma db seed'.
-// =================================================================
 import { PrismaClient, Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import 'dotenv/config';
@@ -32,53 +27,67 @@ async function main() {
     new Date('2025-12-05T00:00:00.000Z'), new Date('2025-12-10T00:00:00.000Z'), new Date('2025-12-31T00:00:00.000Z'),
   ];
 
-  // 3. Define the schedule creation data with an explicit type
   const schedulesToCreate: Prisma.PeakScheduleCreateManyInput[] = [];
 
-  [1, 2, 3, 4, 5].forEach(day => {
-    schedulesToCreate.push({ provider: 'MEA', dayOfWeek: day, startTime: '09:00', endTime: '22:00', isPeak: true });
-    schedulesToCreate.push({ provider: 'PEA', dayOfWeek: day, startTime: '09:00', endTime: '22:00', isPeak: true });
+  // --- Weekday Schedules (Monday - Friday) ---
+  const weekdays = [1, 2, 3, 4, 5];
+
+  weekdays.forEach(day => {
+    // --- MEA Schedule ---
+    // On-Peak Periods
+    schedulesToCreate.push({ provider: 'MEA', dayOfWeek: day, startTime: '06:00', endTime: '10:00', isPeak: true });
+    schedulesToCreate.push({ provider: 'MEA', dayOfWeek: day, startTime: '17:00', endTime: '21:00', isPeak: true });
+    // Off-Peak Periods
+    schedulesToCreate.push({ provider: 'MEA', dayOfWeek: day, startTime: '00:00', endTime: '06:00', isPeak: false });
+    schedulesToCreate.push({ provider: 'MEA', dayOfWeek: day, startTime: '10:00', endTime: '17:00', isPeak: false });
+    schedulesToCreate.push({ provider: 'MEA', dayOfWeek: day, startTime: '21:00', endTime: '23:59', isPeak: false });
+
+    // --- PEA Schedule ---
+    // On-Peak Periods
+    schedulesToCreate.push({ provider: 'PEA', dayOfWeek: day, startTime: '07:00', endTime: '10:00', isPeak: true });
+    schedulesToCreate.push({ provider: 'PEA', dayOfWeek: day, startTime: '17:00', endTime: '21:00', isPeak: true });
+    // Off-Peak Periods
+    schedulesToCreate.push({ provider: 'PEA', dayOfWeek: day, startTime: '00:00', endTime: '07:00', isPeak: false });
+    schedulesToCreate.push({ provider: 'PEA', dayOfWeek: day, startTime: '10:00', endTime: '17:00', isPeak: false });
+    schedulesToCreate.push({ provider: 'PEA', dayOfWeek: day, startTime: '21:00', endTime: '23:59', isPeak: false });
   });
 
+  // --- Weekend Schedule (Saturday & Sunday) ---
+  const weekends = [0, 6];
+  weekends.forEach(day => {
+    // All day off-peak
+    schedulesToCreate.push({ provider: 'MEA', dayOfWeek: day, startTime: '00:00', endTime: '23:59', isPeak: false });
+    schedulesToCreate.push({ provider: 'PEA', dayOfWeek: day, startTime: '00:00', endTime: '23:59', isPeak: false });
+  });
+
+  // --- Holiday Schedule ---
   publicHolidays2025.forEach(holiday => {
-      schedulesToCreate.push({ provider: 'MEA', specificDate: holiday, startTime: '00:00', endTime: '23:59', isPeak: false });
-      schedulesToCreate.push({ provider: 'PEA', specificDate: holiday, startTime: '00:00', endTime: '23:59', isPeak: false });
+    // All day off-peak
+    schedulesToCreate.push({ provider: 'MEA', specificDate: holiday, startTime: '00:00', endTime: '23:59', isPeak: false });
+    schedulesToCreate.push({ provider: 'PEA', specificDate: holiday, startTime: '00:00', endTime: '23:59', isPeak: false });
   });
 
   await prisma.peakSchedule.createMany({ data: schedulesToCreate });
-  console.log(`Seeded ${schedulesToCreate.length} schedule rules.`);
+  console.log(`Seeded ${schedulesToCreate.length} new schedule rules.`);
 
-  // 4. Seed User
+  // --- Seeding Test User ---
   const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash('password123', salt);
+  const hashedPassword = await bcrypt.hash('password12345', salt);
 
-  const user1 = await prisma.user.upsert({
-    where: { email: 'test@test.com' },
-    update: {},
-    create: {
+  const user1 = await prisma.user.create({
+    data: {
       email: 'test@test.com',
       name: 'Test User',
       password: hashedPassword,
-      provider: 'MEA',
-      notificationsEnabled: true,
+      provider: 'MEA', // Default test user to MEA
     },
   });
-  console.log(`Created/updated user: ${user1.name}`);
-
-  // 5. Seed Notes
-  const defaultNotes = [
-    { content: 'Avoid using the oven; use a microwave instead.', peakPeriod: 'ON_PEAK', authorId: user1.id, date: new Date() },
-    { content: 'Postpone laundry until off-peak hours.', peakPeriod: 'ON_PEAK', authorId: user1.id, date: new Date() },
-    { content: 'Charge electric vehicles now.', peakPeriod: 'OFF_PEAK', authorId: user1.id, date: new Date() },
-    { content: 'Run the washing machine and dryer.', peakPeriod: 'OFF_PEAK', authorId: user1.id, date: new Date() },
-  ];
-  await prisma.note.createMany({ data: defaultNotes });
-  console.log(`Created ${defaultNotes.length} notes for ${user1.name}`);
-
-  await prisma.$disconnect();
+  console.log(`Created user: ${user1.name}`);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main()
+  .catch(async (e) => {
+    console.error(e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });

@@ -14,30 +14,11 @@ final notesProvider = StateNotifierProvider.autoDispose
 
 class NotesState {
   final bool isLoading;
-  final String? error;
   final List<Note> notes;
-  final DateTime date;
-
-  NotesState({
-    required this.date,
-    this.isLoading = false,
-    this.error,
-    this.notes = const [],
-  });
-
-  NotesState copyWith({
-    DateTime? date,
-    bool? isLoading,
-    String? error,
-    List<Note>? notes,
-    bool clearError = false,
-  }) {
+  NotesState({this.isLoading = false, this.notes = const []});
+  NotesState copyWith({bool? isLoading, List<Note>? notes}) {
     return NotesState(
-      date: date ?? this.date,
-      isLoading: isLoading ?? this.isLoading,
-      error: clearError ? null : error ?? this.error,
-      notes: notes ?? this.notes,
-    );
+        isLoading: isLoading ?? this.isLoading, notes: notes ?? this.notes);
   }
 }
 
@@ -45,102 +26,76 @@ class NotesNotifier extends StateNotifier<NotesState> {
   final Ref _ref;
   final DateTime _date;
 
-  NotesNotifier(this._ref, this._date) : super(NotesState(date: _date)) {
+  NotesNotifier(this._ref, this._date) : super(NotesState()) {
     fetchNotesForDate();
   }
 
   void _syncProviders() {
     _ref.invalidate(homeProvider);
-    _ref.read(allNotesProvider.notifier).fetchAllNotes();
-    _ref.invalidate(calendarProvider(_date));
-    fetchNotesForDate(); // Also refetch for the current screen
+    _ref.invalidate(allNotesProvider);
+    // After syncing other providers, also refresh the current screen's data.
+    fetchNotesForDate();
   }
 
   Future<void> fetchNotesForDate() async {
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(isLoading: true);
     try {
       final apiService = _ref.read(apiServiceProvider);
       final response = await apiService.getNotesForDate(_date);
-
       if (response.statusCode == 200) {
         final notes = (jsonDecode(response.body) as List)
             .map((data) => Note.fromJson(data))
             .toList();
         state = state.copyWith(isLoading: false, notes: notes);
       } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception('Failed to load notes: ${errorData['message']}');
+        throw Exception('Failed to load notes for date');
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false);
     }
   }
 
+  // The CRUD methods now just call _syncProviders on success.
   Future<bool> addNote(String content, String peakPeriod, DateTime date) async {
-    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final apiService = _ref.read(apiServiceProvider);
       final response = await apiService.createNote(content, peakPeriod, date);
       if (response.statusCode == 201) {
         _syncProviders();
-        state = state.copyWith(isLoading: false);
         return true;
-      } else {
-        // MODIFICATION: Log the specific error from the server
-        final errorData = jsonDecode(response.body);
-        final errorMessage = errorData['message'] ??
-            'Failed to create note. Unknown server error.';
-        // This will print the error to your debug console
-        print('SERVER ERROR on note creation: $errorMessage');
-        state = state.copyWith(isLoading: false, error: errorMessage);
-        return false;
       }
+      return false;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }
   }
 
-  // FIX: Added return type and robust error handling
   Future<bool> updateNote(
       String noteId, String content, String peakPeriod, DateTime date) async {
-    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final apiService = _ref.read(apiServiceProvider);
       final response =
           await apiService.updateNote(noteId, content, peakPeriod, date);
       if (response.statusCode == 200) {
         _syncProviders();
-        state = state.copyWith(isLoading: false);
         return true;
-      } else {
-        final errorData = jsonDecode(response.body);
-        state = state.copyWith(isLoading: false, error: errorData['message']);
-        return false;
       }
+      return false;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }
   }
 
-  // FIX: Added return type and robust error handling
   Future<bool> deleteNote(String noteId) async {
-    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final apiService = _ref.read(apiServiceProvider);
       final response = await apiService.deleteNote(noteId);
       if (response.statusCode == 200) {
         _syncProviders();
-        state = state.copyWith(isLoading: false);
         return true;
-      } else {
-        final errorData = jsonDecode(response.body);
-        state = state.copyWith(isLoading: false, error: errorData['message']);
-        return false;
       }
+      return false;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }
   }

@@ -6,49 +6,50 @@ import 'package:frontend/utils/constants.dart';
 import 'package:hive/hive.dart';
 
 class ApiService {
+  /// A private helper method to construct headers with the auth token.
   Future<Map<String, String>> _getHeaders() async {
     final box = Hive.box('app_data');
     final token = box.get('accessToken');
-    if (token == null) throw Exception('Auth token not found!');
+    if (token == null) {
+      // Return headers without auth for public routes like login/register
+      return {'Content-Type': 'application/json'};
+    }
     return {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
     };
   }
 
-// NEW: Get the real-time peak status from the backend
-  Future<http.Response> getPeakStatus() async {
-    final url = Uri.parse('$apiBaseUrl/status');
-    final headers = await _getHeaders();
-    return await http.get(url, headers: headers);
-  }
-
-  // FIX: Added the missing googleSignIn method
-  Future<http.Response> googleSignIn(String token) async {
-    final url = Uri.parse('$apiBaseUrl/auth/google-signin');
-    return http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'token': token}),
-    );
-  }
+  // --- Auth Endpoints ---
 
   Future<http.Response> register(
       String name, String email, String password) async {
     final url = Uri.parse('$apiBaseUrl/auth/register');
+    final headers = await _getHeaders();
     return http.post(
       url,
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
       body: jsonEncode({'name': name, 'email': email, 'password': password}),
     );
   }
 
   Future<http.Response> login(String email, String password) async {
     final url = Uri.parse('$apiBaseUrl/auth/login');
+    final headers = await _getHeaders();
     return http.post(
       url,
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
       body: jsonEncode({'email': email, 'password': password}),
+    );
+  }
+
+  Future<http.Response> googleSignIn(String idToken) async {
+    final url = Uri.parse('$apiBaseUrl/auth/google-signin');
+    final headers = await _getHeaders();
+    return http.post(
+      url,
+      headers: headers,
+      body: jsonEncode({'token': idToken}),
     );
   }
 
@@ -76,20 +77,12 @@ class ApiService {
     );
   }
 
+  // --- User & Profile Endpoints ---
+
   Future<http.Response> getUserProfile() async {
     final url = Uri.parse('$apiBaseUrl/users/me');
     final headers = await _getHeaders();
-    return await http.get(url, headers: headers);
-  }
-
-  Future<http.Response> updateUserProvider(String provider) async {
-    final url = Uri.parse('$apiBaseUrl/users/me/provider');
-    final headers = await _getHeaders();
-    return http.put(
-      url,
-      headers: headers,
-      body: jsonEncode({'provider': provider}),
-    );
+    return http.get(url, headers: headers);
   }
 
   Future<http.Response> updateUser({String? name, String? avatarUrl}) async {
@@ -105,10 +98,14 @@ class ApiService {
     );
   }
 
-  Future<http.Response> getProviders() async {
-    final url = Uri.parse('$apiBaseUrl/providers');
+  Future<http.Response> updateUserProvider(String provider) async {
+    final url = Uri.parse('$apiBaseUrl/users/me/provider');
     final headers = await _getHeaders();
-    return await http.get(url, headers: headers);
+    return http.put(
+      url,
+      headers: headers,
+      body: jsonEncode({'provider': provider}),
+    );
   }
 
   Future<http.Response> updateNotificationPreferences(bool isEnabled) async {
@@ -121,21 +118,42 @@ class ApiService {
     );
   }
 
+  // --- Schedules & Status Endpoints ---
+
+  Future<http.Response> getPeakStatus() async {
+    final url = Uri.parse('$apiBaseUrl/status');
+    final headers = await _getHeaders();
+    return http.get(url, headers: headers);
+  }
+
   Future<http.Response> getSchedules(String provider) async {
     final url = Uri.parse('$apiBaseUrl/schedules/$provider');
     final headers = await _getHeaders();
-    return await http.get(url, headers: headers);
+    return http.get(url, headers: headers);
   }
 
+  // --- Notes Endpoints ---
+
+  /// Fetches all notes for the logged-in user, filtered by their selected provider.
+  Future<http.Response> getAllNotes() async {
+    final url = Uri.parse('$apiBaseUrl/notes');
+    final headers = await _getHeaders();
+    return http.get(url, headers: headers);
+  }
+
+  /// Fetches notes for a specific date range. Used by the calendar and home screen tips.
   Future<http.Response> getNotesForDate(DateTime date) async {
-    final startOfDayLocal = DateTime(date.year, date.month, date.day, 0, 0, 0);
-    final endOfDayLocal = DateTime(date.year, date.month, date.day, 23, 59, 59);
-    final startDateString = startOfDayLocal.toUtc().toIso8601String();
-    final endDateString = endOfDayLocal.toUtc().toIso8601String();
+    final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+    // Ensure dates are sent in UTC format as expected by the backend
+    final startDateString = startOfDay.toUtc().toIso8601String();
+    final endDateString = endOfDay.toUtc().toIso8601String();
+
     final url = Uri.parse(
         '$apiBaseUrl/notes?startDate=$startDateString&endDate=$endDateString');
     final headers = await _getHeaders();
-    return await http.get(url, headers: headers);
+    return http.get(url, headers: headers);
   }
 
   Future<http.Response> createNote(
@@ -145,7 +163,7 @@ class ApiService {
     final body = jsonEncode({
       'content': content,
       'peakPeriod': peakPeriod,
-      'date': date.toIso8601String(),
+      'date': date.toUtc().toIso8601String(), // Send date in UTC
     });
     return http.post(url, headers: headers, body: body);
   }
@@ -157,7 +175,7 @@ class ApiService {
     final body = jsonEncode({
       'content': content,
       'peakPeriod': peakPeriod,
-      'date': date.toIso8601String(),
+      'date': date.toUtc().toIso8601String(), // Send date in UTC
     });
     return http.put(url, headers: headers, body: body);
   }
@@ -168,15 +186,10 @@ class ApiService {
     return http.delete(url, headers: headers);
   }
 
-  Future<http.Response> getAllNotes() async {
-    final url = Uri.parse('$apiBaseUrl/notes/all');
-    final headers = await _getHeaders();
-    return await http.get(url, headers: headers);
-  }
-
   Future<http.Response> searchNotes(String query) async {
-    final url = Uri.parse('$apiBaseUrl/notes/search?q=$query');
+    final encodedQuery = Uri.encodeComponent(query);
+    final url = Uri.parse('$apiBaseUrl/notes/search?q=$encodedQuery');
     final headers = await _getHeaders();
-    return await http.get(url, headers: headers);
+    return http.get(url, headers: headers);
   }
 }

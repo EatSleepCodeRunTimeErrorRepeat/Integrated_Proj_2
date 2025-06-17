@@ -29,6 +29,7 @@ model Note {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   content    String
   peakPeriod String   // "ON_PEAK" or "OFF_PEAK"
+  provider   String
   date       DateTime
   author     User     @relation(fields: [authorId], references: [id])
   authorId   String   @db.ObjectId

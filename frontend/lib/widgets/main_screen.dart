@@ -1,47 +1,53 @@
-// lib/widgets/main_screen.dart
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/providers/navigation_provider.dart';
 import 'package:frontend/screens/home/home_screen.dart';
 import 'package:frontend/screens/profile/profile_screen.dart';
 import 'package:frontend/screens/schedule/schedule_screen.dart';
+import 'package:frontend/screens/settings/settings_screen.dart';
 import 'package:frontend/widgets/bottom_nav.dart';
+import 'package:frontend/widgets/top_navbar.dart';
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the provider to get the current page state.
+    final currentPage = ref.watch(mainScreenPageProvider);
 
-class _MainScreenState extends State<MainScreen> {
-  // The state for the currently selected index lives here.
-  int _currentIndex = 1; // Default to HomeScreen
+    // Map the enum state to an integer index for the BottomNav.
+    // If we are on the settings page, we'll keep the profile tab highlighted.
+    final bottomNavIndex = (currentPage == AppScreen.settings)
+        ? 2 // Highlight the 'profile' tab
+        : AppScreen.values.indexOf(currentPage);
 
-  // A list of the pages to be displayed.
-  final List<Widget> _pages = [
-    const ScheduleScreen(),
-    const HomeScreen(),
-    const ProfileScreen(),
-  ];
-
-  // The callback function that updates the state.
-  void _onItemTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This is the single, main Scaffold for your authenticated app state.
     return Scaffold(
-      // The body changes based on the selected index.
-      body: _pages[_currentIndex],
-      // The single source of truth for the BottomNav.
+      // The TopNavBar is now part of the main layout.
+      appBar: const TopNavBar(),
+      body: _buildBody(currentPage),
       bottomNavigationBar: BottomNav(
-        currentIndex: _currentIndex,
-        onTap: _onItemTapped,
+        currentIndex: bottomNavIndex,
+        onTap: (index) {
+          // Tapping the bottom nav updates the state provider.
+          ref.read(mainScreenPageProvider.notifier).state =
+              AppScreen.values[index];
+        },
       ),
     );
+  }
+
+  // This helper method returns the correct screen widget based on the state.
+  Widget _buildBody(AppScreen screen) {
+    switch (screen) {
+      case AppScreen.schedule:
+        return const ScheduleScreen();
+      case AppScreen.home:
+        return const HomeScreen();
+      case AppScreen.profile:
+        return const ProfileScreen();
+      case AppScreen.settings:
+        return const SettingsScreen();
+    }
   }
 }

@@ -20,8 +20,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  bool _isGoogleSignInLoading = false;
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -31,33 +29,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  // REFINED REGISTRATION LOGIC
+  /// Validates form and calls the register method in the provider.
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       FocusScope.of(context).unfocus();
-
-      // The authProvider's register method now handles logging the user in.
-      // We don't need to check the 'success' boolean or navigate manually.
-      // The AuthWrapper will automatically redirect the user to the correct screen
-      // once the authentication state changes.
-      await ref.read(authProvider.notifier).register(
+      final success = await ref.read(authProvider.notifier).register(
             _nameController.text.trim(),
             _emailController.text.trim(),
             _passwordController.text.trim(),
           );
+
+      // If registration is successful, show a message and pop back to login screen.
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registration successful! Please log in.'),
+            backgroundColor: AppTheme.offPeakGreen,
+          ),
+        );
+        Navigator.of(context).pop();
+      }
     }
   }
 
+  /// Calls the Google Sign-In method in the provider.
   Future<void> _signInWithGoogle() async {
-    setState(() {
-      _isGoogleSignInLoading = true;
-    });
+    FocusScope.of(context).unfocus();
     await ref.read(authProvider.notifier).signInWithGoogle();
-    if (mounted) {
-      setState(() {
-        _isGoogleSignInLoading = false;
-      });
-    }
   }
 
   @override
@@ -72,7 +70,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     final authState = ref.watch(authProvider);
 
-    // --- The rest of the build method is unchanged ---
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register'),
@@ -148,7 +145,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: authState.isLoading ? null : _register,
-                  child: authState.isLoading && !_isGoogleSignInLoading
+                  child: authState.isLoading
                       ? const SizedBox(
                           height: 24,
                           width: 24,
@@ -157,70 +154,51 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 24),
                 Row(
-                  children: [
+                  children: const [
                     Expanded(
-                      child: Divider(
-                        color: Color.fromARGB(255, 145, 149, 158),
-                        thickness: 1,
-                        endIndent: 10,
-                      ),
-                    ),
-                    const Text(
-                      'Or Register with',
-                      style: TextStyle(
-                        fontFamily: 'Urbanist',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Color(0xFF6A707C),
-                      ),
-                    ),
+                        child: Divider(
+                            color: Color(0xFF91959E),
+                            thickness: 1,
+                            endIndent: 10)),
+                    Text('Or Register with',
+                        style: TextStyle(
+                            fontFamily: 'Urbanist',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Color(0xFF6A707C))),
                     Expanded(
-                      child: Divider(
-                        color: Color.fromARGB(255, 145, 149, 158),
-                        thickness: 1,
-                        indent: 10,
-                      ),
-                    ),
+                        child: Divider(
+                            color: Color(0xFF91959E),
+                            thickness: 1,
+                            indent: 10)),
                   ],
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: authState.isLoading ? null : _signInWithGoogle,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    side: const BorderSide(color: AppTheme.lightGrey),
-                    padding: const EdgeInsets.all(16.0),
-                  ),
-                  child: _isGoogleSignInLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                                AppTheme.primaryGreen),
-                          ))
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      side: const BorderSide(color: AppTheme.lightGrey)),
+                  child: authState.isLoading
+                      ? const SizedBox.shrink()
                       : Image.asset('assets/icons/Google.png', height: 24.0),
                 ),
                 const SizedBox(height: 32),
                 Center(
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Text.rich(
+                    child: const Text.rich(
                       TextSpan(
                         text: "Already have an account? ",
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Colors.black,
-                        ),
+                        style: TextStyle(fontSize: 15, color: Colors.black),
                         children: [
                           TextSpan(
                             text: "Login",
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryGreen,
-                              decoration: TextDecoration.underline,
-                            ),
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryGreen,
+                                decoration: TextDecoration.underline),
                           ),
                         ],
                       ),
