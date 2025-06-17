@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/navigation_provider.dart';
 import 'package:frontend/screens/tips/energy_tips_screen.dart';
 
-// FIX: Convert to a ConsumerWidget to read the navigation state.
 class TopNavBar extends ConsumerWidget implements PreferredSizeWidget {
   const TopNavBar({super.key});
 
@@ -28,7 +27,7 @@ class TopNavBar extends ConsumerWidget implements PreferredSizeWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // FIX: Conditionally show a Back button or the Settings icon.
+          // Conditionally show a Back button or the Settings icon.
           if (currentPage == AppScreen.settings)
             // Show a Back button when on the settings page.
             GestureDetector(
@@ -55,13 +54,13 @@ class TopNavBar extends ConsumerWidget implements PreferredSizeWidget {
                 padding: const EdgeInsets.only(top: 12.0),
                 child: Image.asset(
                   'assets/icons/settings.png',
-                  height: 35,
-                  width: 35,
+                  height: 47, // Adjusted to match previous size
+                  width: 47, // Adjusted to match previous size
                 ),
               ),
             ),
           const Spacer(),
-          // Energy Tips Icon
+          // Energy Tips Icon with navigation logic
           GestureDetector(
             onTap: () => Navigator.push(
               context,
@@ -70,11 +69,12 @@ class TopNavBar extends ConsumerWidget implements PreferredSizeWidget {
                       EnergyTipsScreen(selectedDate: DateTime.now())),
             ),
             child: Padding(
-              padding: const EdgeInsets.only(top: 12.0),
+              padding:
+                  const EdgeInsets.only(top: 12.0), // Move down by 12 pixels
               child: Image.asset(
                 'assets/icons/EnergyTipsEdit.png',
-                height: 35,
-                width: 35,
+                height: 43, // Adjusted size to match previous one
+                width: 43, // Adjusted size to match previous one
               ),
             ),
           ),
@@ -84,5 +84,6 @@ class TopNavBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(90); // Adjusted height
+  Size get preferredSize =>
+      const Size.fromHeight(90); // Adjusted height for the navbar
 }

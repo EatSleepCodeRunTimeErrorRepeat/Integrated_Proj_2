@@ -15,8 +15,10 @@ Future<void> main() async {
   if (!kIsWeb) {
     // Initialize our Notification Service
     await NotificationService().init();
-    // Request permissions right at the start (optional, can be moved elsewhere)
+
+    // Request notification permissions
     await NotificationService().requestPermissions();
+
     // Initialize Mobile Ads
     await MobileAds.instance.initialize();
   }

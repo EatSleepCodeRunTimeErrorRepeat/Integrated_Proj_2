@@ -34,7 +34,7 @@ class BottomNav extends StatelessWidget {
             _buildNavItem(
                 1, 'assets/icons/Home.png', 'assets/icons/activehome.png'),
             _buildNavItem(2, 'assets/icons/profile.png',
-                'assets/icons/activeprofile.png'),
+                'assets/icons/profileactive.png'),
           ],
         ),
       ),

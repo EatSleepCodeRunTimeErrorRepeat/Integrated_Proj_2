@@ -1,5 +1,3 @@
-// lib/screens/tips/energy_tips_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/models/note_model.dart';
@@ -38,7 +36,7 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
       appBar: AppBar(
         title: Text(
             'Tips for ${DateFormat.yMMMMd().format(widget.selectedDate)}',
-            style: const TextStyle(fontSize: 18)),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
         leading: const BackButton(color: AppTheme.textBlack),
       ),
       body: Padding(
@@ -111,18 +109,19 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
     return GestureDetector(
       onTap: () {
         if (_isEditing) {
-          // In edit mode, this button opens the "Add New Tip" dialog
           _showAddEditNoteDialog(notifier: notifier);
         } else {
-          // Not in edit mode, so this button enables it
           setState(() => _isEditing = true);
         }
       },
       child: Container(
         width: 59,
         height: 59,
-        decoration: const BoxDecoration(
-            color: AppTheme.primaryGreen, shape: BoxShape.circle),
+        decoration: BoxDecoration(
+            color: _isEditing
+                ? const Color.fromARGB(255, 192, 192, 192)
+                : Colors.grey,
+            shape: BoxShape.circle),
         child: Center(
           child: Image.asset(
             _isEditing ? 'assets/icons/add.png' : 'assets/icons/editpencil.png',
@@ -137,7 +136,7 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
 
   Widget _buildDoneButton() {
     return Padding(
-      padding: const EdgeInsets.only(top: 16.0),
+      padding: const EdgeInsets.only(top: 6.0), // Moved up by a few pixels
       child: GestureDetector(
         onTap: () => setState(() => _isEditing = false),
         child: Container(
@@ -185,7 +184,7 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                 if (_isEditing)
                   IconButton(
                     icon: Image.asset('assets/icons/cancel.png',
-                        width: 18, height: 18),
+                        width: 24, height: 24), // Increased size
                     onPressed: () => notifier.deleteNote(note.id),
                   ),
               ],
@@ -197,6 +196,7 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
   }
 
   // --- THE RESTORED AND STYLED DIALOG ---
+
   void _showAddEditNoteDialog({required NotesNotifier notifier, Note? note}) {
     final isEditingNote = note != null;
     final textController =
@@ -208,7 +208,6 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
         : (_selectedPeriod == 0 ? 'ON_PEAK' : 'OFF_PEAK');
     DateTime initialDateTime = note?.remindAt ?? DateTime.now();
     TimeOfDay selectedTime = TimeOfDay.fromDateTime(initialDateTime);
-    // NEW: state for the reminder toggle
     bool reminderEnabled = isEditingNote && note.remindAt != null;
 
     showDialog(
@@ -238,11 +237,9 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
-                    // Controls for Peak Period and Time
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Dropdown for On-Peak/Off-Peak
                         DropdownButton<String>(
                           value: dialogPeakPeriod,
                           items: const [
@@ -257,7 +254,6 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                             }
                           },
                         ),
-                        // --- NEW: ROW FOR REMINDER TOGGLE AND TIME ---
                         Row(
                           children: [
                             Switch(
@@ -305,7 +301,6 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                   onPressed: () async {
                     final content = textController.text.trim();
                     if (content.isNotEmpty) {
-                      // Combine the selected date with the new time for the final DateTime object.
                       final finalDateTime = DateTime(
                         widget.selectedDate.year,
                         widget.selectedDate.month,
@@ -313,7 +308,6 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                         selectedTime.hour,
                         selectedTime.minute,
                       );
-                      // Determine the reminder time. It's the finalDateTime if enabled, otherwise null.
                       final DateTime? reminderTime =
                           reminderEnabled ? finalDateTime : null;
 
@@ -330,44 +324,13 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                       if (dialogContext.mounted) {
                         Navigator.of(dialogContext).pop();
                       }
-
-                      // If reminder is enabled, we will use the finalDateTime as the remindAt time.
-                      // The 'remindAt' field will be set on the Note object before sending to the backend
-                      // This requires a modification in the updateNote/addNote API call
-                      // For now, we will handle this locally by passing the reminder time to the provider.
-                      // NOTE: We need to adapt the Note model and API calls to include 'remindAt'
-
-                      // For simplicity in this step, let's assume we pass a new note object
-                      // This part requires updating the Note model and the API service to handle 'remindAt'
-
-                      // Let's create a temporary note object to pass to the provider
-                      Note noteToSave = Note(
-                        id: note?.id ?? '',
-                        content: content,
-                        peakPeriod: dialogPeakPeriod,
-                        date: finalDateTime,
-                        remindAt: reminderEnabled ? finalDateTime : null,
-                      );
-
-                      if (isEditingNote) {
-                        // This assumes updateNote can handle the new Note object structure
-                        await notifier.updateNote(
-                            noteToSave.id,
-                            noteToSave.content,
-                            noteToSave.peakPeriod,
-                            noteToSave.date);
-                      } else {
-                        // This assumes addNote can handle the new Note object structure
-                        await notifier.addNote(noteToSave.content,
-                            noteToSave.peakPeriod, noteToSave.date);
-                      }
-
-                      if (dialogContext.mounted) {
-                        Navigator.of(dialogContext).pop();
-                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(120, 40),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       backgroundColor: AppTheme.primaryGreen),
                   child: const Text('Save'),
                 ),

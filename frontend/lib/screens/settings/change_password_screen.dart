@@ -1,5 +1,3 @@
-// lib/screens/settings/change_password_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/auth_provider.dart';
@@ -43,7 +41,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           _newPasswordController.text,
         );
 
-    // Check if the widget is still in the tree before using its context.
     if (mounted && success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -70,7 +67,17 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Change Password')),
+      appBar: AppBar(
+        title: const Text(
+          'Change Password',
+          style: TextStyle(
+            fontFamily: 'Inter', // Ensure you have 'Inter' font in your assets
+            fontWeight: FontWeight.w600, // SemiBold
+            fontSize: 24,
+            color: Colors.black, // Black color
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(
@@ -78,11 +85,20 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Current Password Section
+              const Text(
+                'Current Password',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
               TextFormField(
                 controller: _currentPasswordController,
                 obscureText: _obscureCurrent,
                 decoration: InputDecoration(
-                    labelText: 'Current Password',
+                    hintText: 'Enter your current password',
                     suffixIcon: IconButton(
                       icon: Icon(_obscureCurrent
                           ? Icons.visibility_off
@@ -95,11 +111,21 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     : null,
               ),
               const SizedBox(height: 16),
+
+              // New Password Section
+              const Text(
+                'New Password',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
               TextFormField(
                 controller: _newPasswordController,
                 obscureText: _obscureNew,
                 decoration: InputDecoration(
-                    labelText: 'New Password',
+                    hintText: 'Enter your new password',
                     suffixIcon: IconButton(
                       icon: Icon(_obscureNew
                           ? Icons.visibility_off
@@ -118,11 +144,21 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 },
               ),
               const SizedBox(height: 16),
+
+              // Confirm New Password Section
+              const Text(
+                'Confirm New Password',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: _obscureConfirm,
                 decoration: InputDecoration(
-                    labelText: 'Confirm New Password',
+                    hintText: 'Re-enter your new password',
                     suffixIcon: IconButton(
                       icon: Icon(_obscureConfirm
                           ? Icons.visibility_off
@@ -138,6 +174,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 },
               ),
               const SizedBox(height: 32),
+
+              // Update Password Button
               ElevatedButton(
                 onPressed: authState.isLoading ? null : _updatePassword,
                 style: ElevatedButton.styleFrom(

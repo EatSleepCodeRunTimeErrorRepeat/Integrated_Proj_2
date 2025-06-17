@@ -1,5 +1,3 @@
-// lib/screens/profile/profile_screen.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,8 +86,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    // FIX for use_build_context_synchronously: Use the context from the builder
-    // which is guaranteed to be valid inside the dialog.
     await showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -123,7 +119,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               .read(authProvider.notifier)
                               .verifyPassword(passwordController.text);
 
-                          // Check if the dialog's context is still mounted before using it.
                           if (!dialogContext.mounted) return;
 
                           if (success) {
@@ -151,7 +146,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // The rest of the build method is unchanged but included for completeness.
     final authState = ref.watch(authProvider);
     final user = authState.user;
 
@@ -291,6 +285,8 @@ class _InfoField extends StatelessWidget {
                     child: Text(value,
                         style: const TextStyle(
                             fontSize: 14, color: AppTheme.textGrey))),
+
+                // Show edit icon if the field is editable
                 if (isEditable)
                   const Icon(Icons.edit, color: AppTheme.textGrey, size: 16),
               ],
