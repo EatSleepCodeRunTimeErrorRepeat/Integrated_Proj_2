@@ -8,7 +8,8 @@ class User {
   final String email;
   final String name;
   final String? provider;
-  final bool notificationsEnabled;
+  final bool? notificationsEnabled;
+  final bool? peakHourAlertsEnabled;
   final String? avatarUrl;
 
   const User({
@@ -16,7 +17,8 @@ class User {
     required this.email,
     required this.name,
     this.provider,
-    required this.notificationsEnabled,
+    this.notificationsEnabled,
+    this.peakHourAlertsEnabled,
     this.avatarUrl,
   });
 
@@ -26,8 +28,8 @@ class User {
       email: json['email'] as String,
       name: json['name'] as String,
       provider: json['provider'] as String?,
-      // Provide a fallback in case the backend ever omits this value.
-      notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
+      notificationsEnabled: json['notificationsEnabled'] ?? true,
+      peakHourAlertsEnabled: json['peakHourAlertsEnabled'] ?? true,
       avatarUrl: json['avatarUrl'] as String?,
     );
   }
@@ -39,6 +41,7 @@ class User {
       'name': name,
       'provider': provider,
       'notificationsEnabled': notificationsEnabled,
+      'peakHourAlertsEnabled': peakHourAlertsEnabled,
       'avatarUrl': avatarUrl,
     };
   }

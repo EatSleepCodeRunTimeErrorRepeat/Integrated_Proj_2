@@ -69,7 +69,7 @@ router.post('/google-signin', async (req: Request, res: Response) => {
 
         const { sub: googleId, email, name, picture: avatarUrl } = payload;
         
-        let user = await prisma.user.findUnique({ where: { googleId } });
+        let user = await prisma.user.findFirst({ where: { googleId } });
 
         if (!user) {
             // Check if a user with that email already exists (e.g., from password signup)

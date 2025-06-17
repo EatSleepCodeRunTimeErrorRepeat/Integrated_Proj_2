@@ -108,16 +108,26 @@ class ApiService {
     );
   }
 
-  Future<http.Response> updateNotificationPreferences(bool isEnabled) async {
+  Future<http.Response> updateNotificationPreferences(
+      {bool? notificationsEnabled, bool? peakHourAlertsEnabled}) async {
     final url = Uri.parse('$apiBaseUrl/users/me/preferences');
     final headers = await _getHeaders();
+
+    // Create a body map that only includes the non-null values.
+    final Map<String, bool> body = {};
+    if (notificationsEnabled != null) {
+      body['notificationsEnabled'] = notificationsEnabled;
+    }
+    if (peakHourAlertsEnabled != null) {
+      body['peakHourAlertsEnabled'] = peakHourAlertsEnabled;
+    }
+
     return http.put(
       url,
       headers: headers,
-      body: jsonEncode({'notificationsEnabled': isEnabled}),
+      body: jsonEncode(body),
     );
   }
-
   // --- Schedules & Status Endpoints ---
 
   Future<http.Response> getPeakStatus() async {

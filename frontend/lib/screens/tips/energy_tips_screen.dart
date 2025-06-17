@@ -201,17 +201,19 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
     final isEditingNote = note != null;
     final textController =
         TextEditingController(text: isEditingNote ? note.content : '');
+
     // State for the dialog's controls
     String dialogPeakPeriod = isEditingNote
         ? note.peakPeriod
         : (_selectedPeriod == 0 ? 'ON_PEAK' : 'OFF_PEAK');
-    DateTime initialDateTime = isEditingNote ? note.date : DateTime.now();
+    DateTime initialDateTime = note?.remindAt ?? DateTime.now();
     TimeOfDay selectedTime = TimeOfDay.fromDateTime(initialDateTime);
+    // NEW: state for the reminder toggle
+    bool reminderEnabled = isEditingNote && note.remindAt != null;
 
     showDialog(
       context: context,
       builder: (dialogContext) {
-        // Use StatefulBuilder so the dialog can manage its own state (for the dropdown and time picker).
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
@@ -255,22 +257,39 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                             }
                           },
                         ),
-                        // Button to open the Time Picker
-                        TextButton(
-                          onPressed: () async {
-                            final TimeOfDay? picked = await showTimePicker(
-                                context: context, initialTime: selectedTime);
-                            if (picked != null) {
-                              setDialogState(() => selectedTime = picked);
-                            }
-                          },
-                          child: Text(
-                            selectedTime.format(context),
-                            style: const TextStyle(
-                                color: AppTheme.primaryGreen,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
+                        // --- NEW: ROW FOR REMINDER TOGGLE AND TIME ---
+                        Row(
+                          children: [
+                            Switch(
+                              value: reminderEnabled,
+                              onChanged: (value) =>
+                                  setDialogState(() => reminderEnabled = value),
+                              activeColor: AppTheme.primaryGreen,
+                            ),
+                            TextButton(
+                              onPressed: !reminderEnabled
+                                  ? null
+                                  : () async {
+                                      final TimeOfDay? picked =
+                                          await showTimePicker(
+                                              context: context,
+                                              initialTime: selectedTime);
+                                      if (picked != null) {
+                                        setDialogState(
+                                            () => selectedTime = picked);
+                                      }
+                                    },
+                              child: Text(
+                                selectedTime.format(context),
+                                style: TextStyle(
+                                    color: reminderEnabled
+                                        ? AppTheme.primaryGreen
+                                        : Colors.grey,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        )
                       ],
                     ),
                   ],
@@ -294,16 +313,55 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                         selectedTime.hour,
                         selectedTime.minute,
                       );
+                      // Determine the reminder time. It's the finalDateTime if enabled, otherwise null.
+                      final DateTime? reminderTime =
+                          reminderEnabled ? finalDateTime : null;
 
                       if (isEditingNote) {
                         await notifier.updateNote(
-                            note.id, content, dialogPeakPeriod, finalDateTime);
+                            note.id, content, dialogPeakPeriod, finalDateTime,
+                            remindAt: reminderTime);
                       } else {
                         await notifier.addNote(
-                            content, dialogPeakPeriod, finalDateTime);
+                            content, dialogPeakPeriod, finalDateTime,
+                            remindAt: reminderTime);
                       }
 
-                      // The provider now handles refreshing the list, so we just need to close the dialog.
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+
+                      // If reminder is enabled, we will use the finalDateTime as the remindAt time.
+                      // The 'remindAt' field will be set on the Note object before sending to the backend
+                      // This requires a modification in the updateNote/addNote API call
+                      // For now, we will handle this locally by passing the reminder time to the provider.
+                      // NOTE: We need to adapt the Note model and API calls to include 'remindAt'
+
+                      // For simplicity in this step, let's assume we pass a new note object
+                      // This part requires updating the Note model and the API service to handle 'remindAt'
+
+                      // Let's create a temporary note object to pass to the provider
+                      Note noteToSave = Note(
+                        id: note?.id ?? '',
+                        content: content,
+                        peakPeriod: dialogPeakPeriod,
+                        date: finalDateTime,
+                        remindAt: reminderEnabled ? finalDateTime : null,
+                      );
+
+                      if (isEditingNote) {
+                        // This assumes updateNote can handle the new Note object structure
+                        await notifier.updateNote(
+                            noteToSave.id,
+                            noteToSave.content,
+                            noteToSave.peakPeriod,
+                            noteToSave.date);
+                      } else {
+                        // This assumes addNote can handle the new Note object structure
+                        await notifier.addNote(noteToSave.content,
+                            noteToSave.peakPeriod, noteToSave.date);
+                      }
+
                       if (dialogContext.mounted) {
                         Navigator.of(dialogContext).pop();
                       }

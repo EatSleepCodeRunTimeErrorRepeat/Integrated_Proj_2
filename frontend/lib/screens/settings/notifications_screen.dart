@@ -18,6 +18,8 @@ class NotificationsScreen extends ConsumerWidget {
     // Get the current notification setting from the user model, with a fallback
     final bool enableNotifications =
         authState.user?.notificationsEnabled ?? true;
+    final bool enablePeakHourAlerts = authState.user?.peakHourAlertsEnabled ??
+        true; // NEW: Read specific setting
 
     return Scaffold(
       appBar: AppBar(title: const Text('Notifications')),
@@ -54,11 +56,14 @@ class NotificationsScreen extends ConsumerWidget {
               description:
                   'Receive reminders when peak hours are about to begin or end.',
               value:
-                  enableNotifications, // This toggle reflects the main setting
-              onChanged: (val) {
-                // It toggles the same underlying setting
-                authNotifier.updateNotificationPreference(val);
-              },
+                  enablePeakHourAlerts, // NEW: Use specific peak hour setting
+              onChanged:
+                  enableNotifications // Only allow toggling if master is ON
+                      ? (val) {
+                          authNotifier.updatePeakHourAlertPreference(
+                              val); // NEW: Call specific update method
+                        }
+                      : null, // Disable if master is off
             ),
           ],
         ),
@@ -70,7 +75,7 @@ class NotificationsScreen extends ConsumerWidget {
     required String title,
     required String description,
     required bool value,
-    required ValueChanged<bool> onChanged,
+    required ValueChanged<bool>? onChanged, // Made nullable
   }) {
     return Row(
       children: [
@@ -90,7 +95,7 @@ class NotificationsScreen extends ConsumerWidget {
         ),
         Switch(
           value: value,
-          onChanged: onChanged,
+          onChanged: onChanged, // Will be null if master is off
           activeColor: AppTheme.primaryGreen,
         ),
       ],

@@ -6,6 +6,7 @@ import 'package:frontend/models/note_model.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/calendar_provider.dart';
 import 'package:frontend/providers/home_provider.dart';
+import 'package:frontend/services/notification_service.dart';
 
 final notesProvider = StateNotifierProvider.autoDispose
     .family<NotesNotifier, NotesState, DateTime>((ref, date) {
@@ -33,8 +34,6 @@ class NotesNotifier extends StateNotifier<NotesState> {
   void _syncProviders() {
     _ref.invalidate(homeProvider);
     _ref.invalidate(allNotesProvider);
-    // After syncing other providers, also refresh the current screen's data.
-    fetchNotesForDate();
   }
 
   Future<void> fetchNotesForDate() async {
@@ -55,12 +54,26 @@ class NotesNotifier extends StateNotifier<NotesState> {
     }
   }
 
-  // The CRUD methods now just call _syncProviders on success.
-  Future<bool> addNote(String content, String peakPeriod, DateTime date) async {
+  Future<bool> addNote(String content, String peakPeriod, DateTime date,
+      {DateTime? remindAt}) async {
     try {
       final apiService = _ref.read(apiServiceProvider);
       final response = await apiService.createNote(content, peakPeriod, date);
       if (response.statusCode == 201) {
+        final newNoteData = jsonDecode(response.body);
+        final noteWithReminder = Note(
+          id: newNoteData['id'],
+          content: newNoteData['content'],
+          peakPeriod: newNoteData['peakPeriod'],
+          date: DateTime.parse(newNoteData['date']).toLocal(),
+          remindAt: remindAt,
+        );
+
+        final bool isEnabled =
+            _ref.read(authProvider).user?.notificationsEnabled ?? true;
+        await NotificationService()
+            .scheduleNoteReminder(noteWithReminder, isEnabled: isEnabled);
+
         _syncProviders();
         return true;
       }
@@ -71,12 +84,27 @@ class NotesNotifier extends StateNotifier<NotesState> {
   }
 
   Future<bool> updateNote(
-      String noteId, String content, String peakPeriod, DateTime date) async {
+      String noteId, String content, String peakPeriod, DateTime date,
+      {DateTime? remindAt}) async {
     try {
       final apiService = _ref.read(apiServiceProvider);
       final response =
           await apiService.updateNote(noteId, content, peakPeriod, date);
       if (response.statusCode == 200) {
+        final updatedNoteData = jsonDecode(response.body);
+        final noteWithReminder = Note(
+          id: updatedNoteData['id'],
+          content: updatedNoteData['content'],
+          peakPeriod: updatedNoteData['peakPeriod'],
+          date: DateTime.parse(updatedNoteData['date']).toLocal(),
+          remindAt: remindAt,
+        );
+
+        final bool isEnabled =
+            _ref.read(authProvider).user?.notificationsEnabled ?? true;
+        await NotificationService()
+            .scheduleNoteReminder(noteWithReminder, isEnabled: isEnabled);
+
         _syncProviders();
         return true;
       }
@@ -91,6 +119,7 @@ class NotesNotifier extends StateNotifier<NotesState> {
       final apiService = _ref.read(apiServiceProvider);
       final response = await apiService.deleteNote(noteId);
       if (response.statusCode == 200) {
+        await NotificationService().cancelNoteReminder(noteId);
         _syncProviders();
         return true;
       }

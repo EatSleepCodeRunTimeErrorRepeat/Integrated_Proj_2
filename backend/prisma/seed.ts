@@ -80,6 +80,8 @@ async function main() {
       name: 'Test User',
       password: hashedPassword,
       provider: 'MEA', // Default test user to MEA
+      notificationsEnabled: true,
+      peakHourAlertsEnabled: true, 
     },
   });
   console.log(`Created user: ${user1.name}`);

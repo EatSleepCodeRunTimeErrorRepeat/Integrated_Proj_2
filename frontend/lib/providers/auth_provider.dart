@@ -6,10 +6,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/api/api_service.dart';
 import 'package:frontend/models/user_model.dart';
+import 'package:frontend/providers/calendar_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:frontend/services/notification_service.dart';
 
 // Provides an instance of our ApiService to the rest of the app.
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
@@ -93,7 +95,10 @@ class AuthProvider extends StateNotifier<AuthState> {
     try {
       debugPrint("[AUTH DEBUG] 1. Starting Google Sign-In process...");
       final GoogleSignIn googleSignIn = GoogleSignIn(
-        serverClientId: 'YOUR_WEB_CLIENT_ID_HERE',
+        serverClientId:
+            // This is the client ID for your backend server. -----------------------------------------------------------------------------------------------------------------------------
+            '549119570408-75rd2fhqunrqs4f5ftf21q38l8al27ob.apps.googleusercontent.com', //replace with your actual client ID
+        // -----------------------------------------------------------------------------------------------------------------------------
       );
 
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
@@ -182,6 +187,8 @@ class AuthProvider extends StateNotifier<AuthState> {
 
   /// Logs the user out, clears all stored data, and resets the state.
   Future<void> logout() async {
+    // When logging out, cancel all previously scheduled notifications.
+    await NotificationService().cancelAllNotifications();
     // Also sign out from Google to allow user to pick a different account next time.
     await GoogleSignIn().signOut();
     await _appDataBox.clear();
@@ -277,31 +284,63 @@ class AuthProvider extends StateNotifier<AuthState> {
   }
 
   /// Updates notification preferences with optimistic UI.
-  Future<void> updateNotificationPreference(bool isEnabled) async {
+  Future<void> updateNotificationPreference(bool enabled) async {
     if (state.user == null) return;
 
-    // Optimistic update: update the UI immediately before the network call.
+    // Optimistically update the UI state
     final originalUser = state.user!;
-    final optimisticUser = User(
+    final updatedUser = User(
       id: originalUser.id,
       email: originalUser.email,
       name: originalUser.name,
       provider: originalUser.provider,
       avatarUrl: originalUser.avatarUrl,
-      notificationsEnabled: isEnabled, // The new value
+      notificationsEnabled: enabled, // Update this value
+      peakHourAlertsEnabled: originalUser.peakHourAlertsEnabled,
     );
-    state = state.copyWith(user: optimisticUser);
+    state = state.copyWith(user: updatedUser);
 
+    // Re-evaluate and schedule/cancel all notifications based on the new master setting
+    await _triggerScheduling();
+
+    // Persist the change to the backend
     try {
-      final response =
-          await _apiService.updateNotificationPreferences(isEnabled);
-      if (response.statusCode != 200) {
-        // If the API call fails, revert the state to the original value.
-        state = state.copyWith(user: originalUser);
-      }
+      await _apiService.updateNotificationPreferences(
+          notificationsEnabled: enabled);
     } catch (e) {
-      // Also revert on network error.
+      // If the API call fails, revert the state and show an error
       state = state.copyWith(user: originalUser);
+      debugPrint("Failed to update master notification preference: $e");
+    }
+  }
+
+  Future<void> updatePeakHourAlertPreference(bool enabled) async {
+    if (state.user == null) return;
+
+    // Optimistically update the UI state
+    final originalUser = state.user!;
+    final updatedUser = User(
+      id: originalUser.id,
+      email: originalUser.email,
+      name: originalUser.name,
+      provider: originalUser.provider,
+      avatarUrl: originalUser.avatarUrl,
+      notificationsEnabled: originalUser.notificationsEnabled,
+      peakHourAlertsEnabled: enabled, // Update this value
+    );
+    state = state.copyWith(user: updatedUser);
+
+    // Re-evaluate and schedule/cancel all notifications
+    await _triggerScheduling();
+
+    // Persist the change to the backend
+    try {
+      await _apiService.updateNotificationPreferences(
+          peakHourAlertsEnabled: enabled);
+    } catch (e) {
+      // If the API call fails, revert the state
+      state = state.copyWith(user: originalUser);
+      debugPrint("Failed to update peak hour alert preference: $e");
     }
   }
 
@@ -341,5 +380,20 @@ class AuthProvider extends StateNotifier<AuthState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('avatar_path_${state.user!.id}', file.path);
     state = state.copyWith(localAvatarPath: file.path);
+  }
+
+  Future<void> _triggerScheduling() async {
+    // This helper function reads the necessary data and calls the notification service.
+    if (state.user == null) return;
+
+    // We need the schedules to calculate notifications. We can read the provider for this.
+    final schedulesAsyncValue = _ref.read(schedulesProvider);
+    final schedules = schedulesAsyncValue.asData?.value ??
+        []; // Safely get list or empty list
+
+    final bool generalOn = state.user!.notificationsEnabled ?? true;
+    final bool peakAlertsOn = state.user!.peakHourAlertsEnabled ?? true;
+    await NotificationService().schedulePeakHourAlerts(schedules,
+        generalOn: generalOn, peakAlertsOn: peakAlertsOn);
   }
 }

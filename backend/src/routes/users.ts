@@ -95,7 +95,7 @@ router.put('/me/provider', protect, async (req: AuthRequest, res: Response) => {
 // --- UPDATE USER NOTIFICATION PREFERENCES ---
 router.put('/me/preferences', protect, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { notificationsEnabled } = req.body;
+        const { notificationsEnabled, peakHourAlertsEnabled } = req.body;
         const userId = req.user?.userId;
 
         if (!userId) {
@@ -103,19 +103,29 @@ router.put('/me/preferences', protect, async (req: AuthRequest, res: Response): 
             return;
         }
         
-        if (typeof notificationsEnabled !== 'boolean') {
-            res.status(400).json({ message: 'A boolean value for notificationsEnabled is required.' });
+        const dataToUpdate: { notificationsEnabled?: boolean, peakHourAlertsEnabled?: boolean } = {};
+
+        if (typeof notificationsEnabled === 'boolean') {
+            dataToUpdate.notificationsEnabled = notificationsEnabled;
+        }
+        if (typeof peakHourAlertsEnabled === 'boolean') {
+            dataToUpdate.peakHourAlertsEnabled = peakHourAlertsEnabled;
+        }
+
+        if (Object.keys(dataToUpdate).length === 0) {
+            res.status(400).json({ message: 'A boolean value for notificationsEnabled or peakHourAlertsEnabled is required.' });
             return;
         }
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },
-            data: { notificationsEnabled: notificationsEnabled },
+            data: dataToUpdate,
         });
         
         res.status(200).json({ 
             message: 'Preferences updated successfully',
-            notificationsEnabled: updatedUser.notificationsEnabled 
+            notificationsEnabled: updatedUser.notificationsEnabled,
+            peakHourAlertsEnabled: updatedUser.peakHourAlertsEnabled,
         });
 
     } catch (error) {

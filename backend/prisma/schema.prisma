@@ -17,11 +17,12 @@ model User {
   password             String?   // The '?' makes this field optional
   provider             String?
   notificationsEnabled Boolean   @default(true)
+  peakHourAlertsEnabled Boolean   @default(true) 
   notes                Note[]
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  googleId             String?   @unique
+  googleId             String?
   avatarUrl            String?
 }
 

@@ -8,13 +8,14 @@ class Note {
   final String content;
   final String peakPeriod; // "ON_PEAK" or "OFF_PEAK"
   final DateTime date;
+  final DateTime? remindAt;
 
-  const Note({
-    required this.id,
-    required this.content,
-    required this.peakPeriod,
-    required this.date,
-  });
+  const Note(
+      {required this.id,
+      required this.content,
+      required this.peakPeriod,
+      required this.date,
+      this.remindAt});
 
   factory Note.fromJson(Map<String, dynamic> json) {
     return Note(
@@ -22,6 +23,9 @@ class Note {
       content: json['content'] as String,
       peakPeriod: json['peakPeriod'] as String,
       date: DateTime.parse(json['date'] as String).toLocal(),
+      remindAt: json['remindAt'] != null
+          ? DateTime.parse(json['remindAt'] as String).toLocal()
+          : null,
     );
   }
 
@@ -31,6 +35,7 @@ class Note {
       'content': content,
       'peakPeriod': peakPeriod,
       'date': date.toUtc().toIso8601String(),
+      'remindAt': remindAt?.toUtc().toIso8601String(),
     };
   }
 }
