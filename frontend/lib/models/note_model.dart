@@ -10,12 +10,13 @@ class Note {
   final DateTime date;
   final DateTime? remindAt;
 
-  const Note(
-      {required this.id,
-      required this.content,
-      required this.peakPeriod,
-      required this.date,
-      this.remindAt});
+  const Note({
+    required this.id,
+    required this.content,
+    required this.peakPeriod,
+    required this.date,
+    this.remindAt,
+  });
 
   factory Note.fromJson(Map<String, dynamic> json) {
     return Note(

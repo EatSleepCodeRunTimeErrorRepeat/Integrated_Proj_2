@@ -5,6 +5,9 @@ import 'package:frontend/providers/notes_provider.dart';
 import 'package:frontend/utils/app_theme.dart';
 import 'package:intl/intl.dart';
 
+// This provider tracks if a change was made on this screen.
+final didChangeNotesProvider = StateProvider<bool>((ref) => false);
+
 class EnergyTipsScreen extends ConsumerStatefulWidget {
   final DateTime selectedDate;
   const EnergyTipsScreen({super.key, required this.selectedDate});
@@ -18,13 +21,17 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
   bool _isEditing = false;
 
   @override
-  Widget build(BuildContext context) {
-    // Watch the provider for the selected date. The UI will rebuild when notes change.
-    final notesState = ref.watch(notesProvider(widget.selectedDate));
-    // Get the provider's notifier to call methods like addNote, deleteNote, etc.
-    final notesNotifier = ref.read(notesProvider(widget.selectedDate).notifier);
+  void initState() {
+    super.initState();
+    // Reset the change tracker when the screen is first built.
+    Future.microtask(
+        () => ref.read(didChangeNotesProvider.notifier).state = false);
+  }
 
-    // Filter notes based on the selected toggle (On-Peak/Off-Peak)
+  @override
+  Widget build(BuildContext context) {
+    final notesState = ref.watch(notesProvider(widget.selectedDate));
+
     final onPeakNotes =
         notesState.notes.where((n) => n.peakPeriod == 'ON_PEAK').toList();
     final offPeakNotes =
@@ -134,6 +141,8 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
     );
   }
 
+  void _showAddEditNoteDialog({Note? note}) {
+    final notesNotifier = ref.read(notesProvider(widget.selectedDate).notifier);
   Widget _buildDoneButton() {
     return Padding(
       padding: const EdgeInsets.only(top: 6.0), // Moved up by a few pixels
@@ -202,11 +211,10 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
     final textController =
         TextEditingController(text: isEditingNote ? note.content : '');
 
-    // State for the dialog's controls
     String dialogPeakPeriod = isEditingNote
         ? note.peakPeriod
         : (_selectedPeriod == 0 ? 'ON_PEAK' : 'OFF_PEAK');
-    DateTime initialDateTime = note?.remindAt ?? DateTime.now();
+    DateTime initialDateTime = isEditingNote ? note.date : DateTime.now();
     TimeOfDay selectedTime = TimeOfDay.fromDateTime(initialDateTime);
     bool reminderEnabled = isEditingNote && note.remindAt != null;
 
@@ -300,17 +308,38 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     final content = textController.text.trim();
+                    if (content.isEmpty) return;
+
+                    final finalDateTime = DateTime(
                     if (content.isNotEmpty) {
                       final finalDateTime = DateTime(
                         widget.selectedDate.year,
                         widget.selectedDate.month,
                         widget.selectedDate.day,
                         selectedTime.hour,
+                        selectedTime.minute);
+                    final DateTime? reminderTime =
+                        reminderEnabled ? finalDateTime : null;
                         selectedTime.minute,
                       );
                       final DateTime? reminderTime =
                           reminderEnabled ? finalDateTime : null;
 
+                    bool success = false;
+                    if (isEditingNote) {
+                      success = await notesNotifier.updateNote(
+                          note.id, content, dialogPeakPeriod, finalDateTime,
+                          remindAt: reminderTime);
+                    } else {
+                      success = await notesNotifier.addNote(
+                          content, dialogPeakPeriod, finalDateTime,
+                          remindAt: reminderTime);
+                    }
+
+                    if (success) {
+                      ref.read(didChangeNotesProvider.notifier).state = true;
+                      await notesNotifier.refresh();
+                      // Check if context is still valid before using it
                       if (isEditingNote) {
                         await notifier.updateNote(
                             note.id, content, dialogPeakPeriod, finalDateTime,
@@ -337,6 +366,140 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  Widget _buildPeriodToggle() {
+    return Container(
+      height: 59,
+      decoration: BoxDecoration(
+          color: AppTheme.lightGrey,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withAlpha(26), blurRadius: 6)
+          ]),
+      child: Row(
+        children: [
+          Expanded(child: _buildToggleButton(0, 'On-Peak', AppTheme.peakRed)),
+          Expanded(
+              child: _buildToggleButton(1, 'Off-Peak', AppTheme.offPeakGreen)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleButton(int index, String text, Color activeColor) {
+    final isSelected = _selectedPeriod == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPeriod = index),
+      child: Container(
+        height: double.infinity,
+        decoration: BoxDecoration(
+            color: isSelected ? activeColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(10)),
+        child: Center(
+            child: Text(text,
+                style: TextStyle(
+                    color: isSelected ? Colors.white : AppTheme.textGrey,
+                    fontWeight: FontWeight.w500))),
+      ),
+    );
+  }
+
+  Widget _buildEditButton() {
+    return GestureDetector(
+      onTap: () {
+        if (_isEditing) {
+          _showAddEditNoteDialog();
+        } else {
+          setState(() => _isEditing = true);
+        }
+      },
+      child: Container(
+        width: 59,
+        height: 59,
+        decoration: const BoxDecoration(
+            color: AppTheme.primaryGreen, shape: BoxShape.circle),
+        child: Center(
+          child: Image.asset(
+            _isEditing ? 'assets/icons/add.png' : 'assets/icons/editpencil.png',
+            width: 24,
+            height: 24,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDoneButton() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16.0),
+      child: GestureDetector(
+        onTap: () => setState(() => _isEditing = false),
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: const BoxDecoration(
+              color: AppTheme.primaryGreen, shape: BoxShape.circle),
+          child: Center(
+              child: Image.asset('assets/icons/donedit.png',
+                  width: 32, height: 32)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotesList(List<Note> notes) {
+    if (notes.isEmpty) {
+      return Center(
+          child:
+              Text('No tips for this period. ${_isEditing ? "Add one!" : ""}'));
+    }
+    return ListView.builder(
+      itemCount: notes.length,
+      itemBuilder: (context, index) {
+        final note = notes[index];
+        return InkWell(
+          onTap: _isEditing ? () => _showAddEditNoteDialog(note: note) : null,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+                color: const Color(0xFF545454).withAlpha(15),
+                borderRadius: BorderRadius.circular(12)),
+            child: Row(
+              children: [
+                Text(
+                  DateFormat('HH:mm').format(note.date),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Color(0xFF545454)),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(note.content,
+                      style: const TextStyle(
+                          color: Color(0xFF545454), fontSize: 16)),
+                ),
+                if (_isEditing)
+                  IconButton(
+                    icon: Image.asset('assets/icons/cancel.png',
+                        width: 18, height: 18),
+                    onPressed: () async {
+                      final notesNotifier =
+                          ref.read(notesProvider(widget.selectedDate).notifier);
+                      final success = await notesNotifier.deleteNote(note.id);
+                      if (success) {
+                        ref.read(didChangeNotesProvider.notifier).state = true;
+                        await notesNotifier.refresh();
+                      }
+                    },
+                  ),
+              ],
+            ),
+          ),
         );
       },
     );

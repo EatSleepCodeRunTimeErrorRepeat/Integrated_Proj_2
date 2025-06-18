@@ -18,7 +18,6 @@ class BottomNav extends StatelessWidget {
         color: AppTheme.background,
         boxShadow: [
           BoxShadow(
-            // FIX: Replaced deprecated method
             color: Colors.black.withAlpha(12), // ~5% opacity
             blurRadius: 10,
           )
