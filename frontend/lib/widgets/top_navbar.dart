@@ -55,8 +55,8 @@ class TopNavBar extends ConsumerWidget implements PreferredSizeWidget {
                 padding: const EdgeInsets.only(top: 12.0),
                 child: Image.asset(
                   'assets/icons/settings.png',
-                  height: 35,
-                  width: 35,
+                  height: 47,
+                  width: 47,
                 ),
               ),
             ),
@@ -73,8 +73,8 @@ class TopNavBar extends ConsumerWidget implements PreferredSizeWidget {
               padding: const EdgeInsets.only(top: 12.0),
               child: Image.asset(
                 'assets/icons/EnergyTipsEdit.png',
-                height: 35,
-                width: 35,
+                height: 43,
+                width: 43,
               ),
             ),
           ),

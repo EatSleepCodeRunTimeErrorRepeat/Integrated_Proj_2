@@ -2,14 +2,17 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:frontend/models/note_model.dart';
 import 'package:frontend/models/peak_schedule_model.dart';
 import 'package:frontend/providers/calendar_provider.dart';
 import 'package:frontend/providers/notes_provider.dart';
 import 'package:frontend/screens/tips/energy_tips_screen.dart';
+import 'package:frontend/services/notification_service.dart'; // Import NotificationService
 import 'package:frontend/utils/app_theme.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:timezone/timezone.dart' as tz; // Import timezone package
 
 class ScheduleScreen extends ConsumerStatefulWidget {
   const ScheduleScreen({super.key});
@@ -22,26 +25,84 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   CalendarFormat _calendarFormat = CalendarFormat.month;
-
-  // --- ADDED FOR DOUBLE TAP ---
-  // This will store the timestamp of the last tap to detect a double tap.
   DateTime? _lastTapTime;
 
-  void _navigateToTipsScreen(DateTime day) {
-    Navigator.push(
+  Future<void> _navigateToTipsScreen(DateTime day) async {
+    final bool? didChange = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
           builder: (context) => EnergyTipsScreen(selectedDate: day)),
     );
+
+    if (didChange == true && mounted) {
+      ref.invalidate(allNotesProvider);
+      ref.invalidate(notesProvider(day));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // The main build method is unchanged
     return Scaffold(
       body: Column(
         children: [
           _buildCalendar(),
+
+          // --- IMMEDIATE TEST BUTTON ---
+          ElevatedButton(
+            onPressed: () async {
+              final FlutterLocalNotificationsPlugin
+                  flutterLocalNotificationsPlugin =
+                  FlutterLocalNotificationsPlugin();
+              await flutterLocalNotificationsPlugin.show(
+                999,
+                "🚀 Notification Test",
+                "If you see this, the channel is working.",
+                const NotificationDetails(
+                  android: AndroidNotificationDetails(
+                    'peak_hour_alerts_channel',
+                    'Peak Hour Alerts',
+                    channelDescription:
+                        'Notifications for upcoming peak electricity hours.',
+                    importance: Importance.max,
+                    priority: Priority.high,
+                  ),
+                ),
+              );
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content:
+                        Text("Test notification sent! Check system tray.")));
+              }
+            },
+            child: const Text("Send Immediate Test Notification"),
+          ),
+
+          // --- "TIME-TRAVEL" TEST BUTTON ---
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+            onPressed: () async {
+              final notificationService = NotificationService();
+              final tz.TZDateTime scheduledTime =
+                  tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5));
+
+              // This assumes you added the 'scheduleTestNotification' method to your service
+              // from the previous instruction.
+              await notificationService.scheduleTestNotification(
+                title: "⏰ Scheduled Test",
+                body: "This notification was scheduled 5 seconds ago.",
+                scheduledTime: scheduledTime,
+              );
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text("Scheduled test in 5 seconds..."),
+                  duration: Duration(seconds: 4),
+                ));
+              }
+            },
+            child: const Text("Send Scheduled Test (in 5s)"),
+          ),
+
           const Divider(height: 1, thickness: 1),
           Padding(
             padding:
@@ -93,28 +154,20 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         }
       },
       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-
-      // --- UPDATED GESTURE LOGIC ---
       onDaySelected: (selectedDay, focusedDay) {
         final now = DateTime.now();
-        // Check if the last tap was recent (e.g., within 300ms)
         if (_lastTapTime != null &&
-            now.difference(_lastTapTime!) < const Duration(milliseconds: 300)) {
-          // If yes, it's a double tap. Navigate to the tips screen.
+            isSameDay(_selectedDay, selectedDay) &&
+            now.difference(_lastTapTime!) < const Duration(milliseconds: 400)) {
           _navigateToTipsScreen(selectedDay);
-        } else {
-          // If it's a single tap, just select the day.
-          if (!isSameDay(_selectedDay, selectedDay)) {
-            setState(() {
-              _selectedDay = selectedDay;
-              _focusedDay = focusedDay;
-            });
-          }
+        } else if (!isSameDay(_selectedDay, selectedDay)) {
+          setState(() {
+            _selectedDay = selectedDay;
+            _focusedDay = focusedDay;
+          });
         }
-        // Store the time of this tap.
         _lastTapTime = now;
       },
-
       eventLoader: (day) {
         return notesByDay[DateTime.utc(day.year, day.month, day.day)] ?? [];
       },
@@ -129,22 +182,16 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                 border: Border.all(color: AppTheme.holidayBlue, width: 1.5),
               ),
               child: Center(
-                child: Text('${day.day}',
-                    style: const TextStyle(color: Colors.black)),
-              ),
+                  child: Text('${day.day}',
+                      style: const TextStyle(color: Colors.black))),
             );
           }
           return null;
         },
         markerBuilder: (context, date, events) {
-          if (events.isEmpty) {
-            return null;
-          }
+          if (events.isEmpty) return null;
           return Positioned(
-            right: 1,
-            bottom: 1,
-            child: _buildEventsMarker(events),
-          );
+              right: 1, bottom: 1, child: _buildEventsMarker(events));
         },
       ),
       calendarStyle: CalendarStyle(
@@ -156,8 +203,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       ),
     );
   }
-
-  // The rest of the file (buildEventsMarker, buildScheduleList, etc.) remains unchanged.
 
   Widget _buildEventsMarker(List<dynamic> events) {
     final notes = events.cast<Note>();
@@ -182,6 +227,36 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   }
 
   Widget _buildScheduleList() {
+    final holidays = ref.watch(holidayProvider);
+    final isHoliday =
+        holidays.any((holiday) => isSameDay(holiday, _selectedDay));
+
+    if (isHoliday) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.celebration_outlined,
+                size: 48, color: Colors.grey.shade600),
+            const SizedBox(height: 16),
+            Text(
+              'Public Holiday',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'No peak periods today.',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
     final notesAsync = ref.watch(notesProvider(_selectedDay));
     final schedulesAsync = ref.watch(schedulesProvider);
 
@@ -202,7 +277,9 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       if (s.specificDate != null) {
         return isSameDay(s.specificDate!, _selectedDay);
       }
-      return s.dayOfWeek == _selectedDay.weekday;
+      final int dartWeekday =
+          _selectedDay.weekday == 7 ? 0 : _selectedDay.weekday;
+      return s.dayOfWeek == dartWeekday;
     }).toList();
 
     final List<Map<String, dynamic>> displayItems = [];

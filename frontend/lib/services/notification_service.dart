@@ -37,7 +37,6 @@ class NotificationService {
   }
 
   Future<void> requestPermissions() async {
-    // Standard notification permission
     final androidPlugin =
         _localNotifications.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
@@ -47,12 +46,12 @@ class NotificationService {
         IOSFlutterLocalNotificationsPlugin>();
     await iOSPlugin?.requestPermissions(alert: true, badge: true, sound: true);
 
-    // Exact alarm permission
     if (await Permission.scheduleExactAlarm.isDenied) {
       await Permission.scheduleExactAlarm.request();
     }
   }
 
+  /// --- THIS IS THE FULLY UPGRADED SCHEDULING METHOD ---
   Future<void> schedulePeakHourAlerts(List<PeakSchedule> schedules,
       {required bool generalOn, required bool peakAlertsOn}) async {
     if (!generalOn || !peakAlertsOn) {
@@ -68,12 +67,12 @@ class NotificationService {
       return;
     }
 
-    debugPrint("[Notifications] Scheduling peak hour alerts...");
+    debugPrint("[Notifications] Scheduling all peak and off-peak alerts...");
     await cancelAllNotifications();
 
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-    int notificationId = 0;
 
+    // Look for alerts in the next 7 days
     for (int i = 0; i < 7; i++) {
       final dayToCheck = now.add(Duration(days: i));
 
@@ -81,34 +80,94 @@ class NotificationService {
         if (rule.specificDate != null) {
           return DateUtils.isSameDay(rule.specificDate, dayToCheck);
         }
-        final int dartWeekday = dayToCheck.weekday % 7;
+        final int dartWeekday =
+            dayToCheck.weekday % 7; // Convert to Prisma's format (Sun=0)
         return rule.dayOfWeek == dartWeekday;
       }).toList();
 
       for (final rule in rulesForDay) {
-        if (rule.isPeak) {
-          final timeParts = rule.startTime.split(':');
-          final peakHour = int.parse(timeParts[0]);
-          final peakMinute = int.parse(timeParts[1]);
+        // --- Schedule alert for the START of the period ---
+        final startTimeParts = rule.startTime.split(':');
+        final startDateTime = tz.TZDateTime(
+            tz.local,
+            dayToCheck.year,
+            dayToCheck.month,
+            dayToCheck.day,
+            int.parse(startTimeParts[0]),
+            int.parse(startTimeParts[1]));
+        final startScheduledTime =
+            startDateTime.subtract(const Duration(minutes: 15));
 
-          final peakTime = tz.TZDateTime(tz.local, dayToCheck.year,
-              dayToCheck.month, dayToCheck.day, peakHour, peakMinute);
-          final scheduledTime = peakTime.subtract(const Duration(minutes: 15));
+        if (startScheduledTime.isAfter(now)) {
+          final title = rule.isPeak
+              ? 'On-Peak Period Starting!'
+              : 'Off-Peak Period Starting';
+          final body =
+              'Heads up! An ${rule.isPeak ? "On-Peak" : "Off-Peak"} period starts in 15 minutes at ${rule.startTime}.';
+          // Create a unique ID for the start alert
+          final startId = int.parse(
+              '${dayToCheck.month}${dayToCheck.day}${startTimeParts.join()}1');
 
-          if (scheduledTime.isAfter(now)) {
-            await _scheduleNotification(
-              id: notificationId++,
-              title: 'Peak Hour Alert ⚡️',
-              body:
-                  'Heads up! A peak period starts in 15 minutes at ${rule.startTime}.',
-              scheduledTime: scheduledTime,
-            );
-            debugPrint(
-                "[Notifications] Scheduled peak alert for ${DateFormat('MMM d, HH:mm').format(scheduledTime)}");
-          }
+          //debugPrint("[DEBUG] Scheduling ID=$startId at $startScheduledTime");
+          debugPrint("[DEBUG] Scheduling ID=$startId at $startScheduledTime");
+
+          await _scheduleNotification(
+              id: startId,
+              title: title,
+              body: body,
+              scheduledTime: startScheduledTime);
+          debugPrint(
+              "[Notifications] Scheduled START alert for ${rule.startTime} on ${DateFormat('MMM d')}: $body");
+        }
+
+        // --- Schedule alert for the END of the period ---
+        final endTimeParts = rule.endTime.split(':');
+        final endDateTime = tz.TZDateTime(
+            tz.local,
+            dayToCheck.year,
+            dayToCheck.month,
+            dayToCheck.day,
+            int.parse(endTimeParts[0]),
+            int.parse(endTimeParts[1]));
+        final endScheduledTime =
+            endDateTime.subtract(const Duration(minutes: 3));
+
+        if (endScheduledTime.isAfter(now)) {
+          final title = rule.isPeak
+              ? 'On-Peak Period Ending Soon'
+              : 'Off-Peak Period Ending Soon';
+          final body =
+              'Get ready! The ${rule.isPeak ? "On-Peak" : "Off-Peak"} period will end in 15 minutes at ${rule.endTime}.';
+          // Create a unique ID for the end alert
+          final endId = int.parse(
+              '${dayToCheck.month}${dayToCheck.day}${endTimeParts.join()}2');
+
+          await _scheduleNotification(
+              id: endId,
+              title: title,
+              body: body,
+              scheduledTime: endScheduledTime);
+          debugPrint(
+              "[Notifications] Scheduled END alert for ${rule.endTime} on ${DateFormat('MMM d')}: $body");
         }
       }
     }
+  }
+
+  // --- ADD THIS NEW METHOD FOR TESTING ---
+  Future<void> scheduleTestNotification({
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledTime,
+  }) async {
+    debugPrint(
+        "[Notifications] Scheduling test notification for $scheduledTime");
+    await _scheduleNotification(
+      id: 998, // A unique ID for the test
+      title: title,
+      body: body,
+      scheduledTime: scheduledTime,
+    );
   }
 
   Future<void> scheduleNoteReminder(Note note,

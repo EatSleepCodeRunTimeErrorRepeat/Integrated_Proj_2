@@ -4,10 +4,9 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/models/note_model.dart';
 import 'package:frontend/providers/auth_provider.dart';
-import 'package:frontend/providers/calendar_provider.dart';
-import 'package:frontend/providers/home_provider.dart';
 import 'package:frontend/services/notification_service.dart';
 
+// The provider definition itself is unchanged.
 final notesProvider = StateNotifierProvider.autoDispose
     .family<NotesNotifier, NotesState, DateTime>((ref, date) {
   return NotesNotifier(ref, date);
@@ -23,6 +22,7 @@ class NotesState {
   }
 }
 
+// --- THIS CLASS HAS BEEN REWRITTEN FOR RELIABILITY AND SIMPLICITY ---
 class NotesNotifier extends StateNotifier<NotesState> {
   final Ref _ref;
   final DateTime _date;
@@ -31,9 +31,9 @@ class NotesNotifier extends StateNotifier<NotesState> {
     fetchNotesForDate();
   }
 
-  void _syncProviders() {
-    _ref.invalidate(homeProvider);
-    _ref.invalidate(allNotesProvider);
+  // A public method so the UI can tell this specific provider to refresh.
+  Future<void> refresh() async {
+    await fetchNotesForDate();
   }
 
   Future<void> fetchNotesForDate() async {
@@ -54,12 +54,16 @@ class NotesNotifier extends StateNotifier<NotesState> {
     }
   }
 
+  // 'addNote' now just calls the API and returns true/false.
+  // It no longer tries to refresh other providers.
   Future<bool> addNote(String content, String peakPeriod, DateTime date,
       {DateTime? remindAt}) async {
     try {
       final apiService = _ref.read(apiServiceProvider);
       final response = await apiService.createNote(content, peakPeriod, date);
+
       if (response.statusCode == 201) {
+        // On success, schedule the notification and report success.
         final newNoteData = jsonDecode(response.body);
         final noteWithReminder = Note(
           id: newNoteData['id'],
@@ -68,13 +72,10 @@ class NotesNotifier extends StateNotifier<NotesState> {
           date: DateTime.parse(newNoteData['date']).toLocal(),
           remindAt: remindAt,
         );
-
         final bool isEnabled =
             _ref.read(authProvider).user?.notificationsEnabled ?? true;
         await NotificationService()
             .scheduleNoteReminder(noteWithReminder, isEnabled: isEnabled);
-
-        _syncProviders();
         return true;
       }
       return false;
@@ -83,6 +84,7 @@ class NotesNotifier extends StateNotifier<NotesState> {
     }
   }
 
+  // 'updateNote' is also simplified.
   Future<bool> updateNote(
       String noteId, String content, String peakPeriod, DateTime date,
       {DateTime? remindAt}) async {
@@ -90,6 +92,7 @@ class NotesNotifier extends StateNotifier<NotesState> {
       final apiService = _ref.read(apiServiceProvider);
       final response =
           await apiService.updateNote(noteId, content, peakPeriod, date);
+
       if (response.statusCode == 200) {
         final updatedNoteData = jsonDecode(response.body);
         final noteWithReminder = Note(
@@ -99,13 +102,10 @@ class NotesNotifier extends StateNotifier<NotesState> {
           date: DateTime.parse(updatedNoteData['date']).toLocal(),
           remindAt: remindAt,
         );
-
         final bool isEnabled =
             _ref.read(authProvider).user?.notificationsEnabled ?? true;
         await NotificationService()
             .scheduleNoteReminder(noteWithReminder, isEnabled: isEnabled);
-
-        _syncProviders();
         return true;
       }
       return false;
@@ -114,13 +114,13 @@ class NotesNotifier extends StateNotifier<NotesState> {
     }
   }
 
+  // 'deleteNote' is also simplified.
   Future<bool> deleteNote(String noteId) async {
     try {
       final apiService = _ref.read(apiServiceProvider);
       final response = await apiService.deleteNote(noteId);
       if (response.statusCode == 200) {
         await NotificationService().cancelNoteReminder(noteId);
-        _syncProviders();
         return true;
       }
       return false;

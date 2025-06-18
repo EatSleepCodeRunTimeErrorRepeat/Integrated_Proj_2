@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/calendar_provider.dart';
 import 'package:frontend/providers/home_provider.dart';
 import 'package:frontend/utils/app_theme.dart';
 import 'package:frontend/widgets/tips_carousel_widget.dart';
@@ -27,8 +28,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Use listenManual to set up a listener on our provider.
-    // This allows us to start the timer when data is first received.
     ref.listenManual(peakStatusProvider, (previous, next) {
       if (next.hasValue) {
         final int timeToNextChange =
@@ -57,8 +56,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       } else {
         timer.cancel();
-        // When the timer hits zero, invalidate the provider to refetch the
-        // new status from the backend, which will start a new countdown.
         if (mounted) {
           ref.invalidate(peakStatusProvider);
         }
@@ -94,6 +91,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final peakStatusAsync = ref.watch(peakStatusProvider);
     final user = authState.user;
 
+    // By watching this provider here, we trigger the automatic scheduling
+    // of peak hour notifications as soon as the user reaches the home screen.
+    ref.watch(schedulesProvider);
+
     ImageProvider displayImage;
     if (authState.localAvatarPath != null) {
       displayImage = FileImage(File(authState.localAvatarPath!));
@@ -106,9 +107,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-          // Allow pull-to-refresh to refetch all data for the home screen.
+          // Allow pull-to-refresh to refetch all data.
           ref.invalidate(peakStatusProvider);
           ref.invalidate(homeProvider);
+          ref.invalidate(schedulesProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

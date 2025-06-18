@@ -2,6 +2,13 @@
   <library name="Dart Packages" type="DartPackagesLibraryType">
     <properties>
       <option name="packageNameToDirsMap">
+        <entry key="args">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/args-2.7.0/lib" />
+            </list>
+          </value>
+        </entry>
         <entry key="async">
           <value>
             <list>
@@ -55,6 +62,13 @@
           <value>
             <list>
               <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/cupertino_icons-1.0.8/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="dbus">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/dbus-0.7.11/lib" />
             </list>
           </value>
         </entry>
@@ -132,6 +146,27 @@
           <value>
             <list>
               <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_lints-5.0.0/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="flutter_local_notifications">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_local_notifications-17.2.4/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="flutter_local_notifications_linux">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="flutter_local_notifications_platform_interface">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_local_notifications_platform_interface-7.2.0/lib" />
             </list>
           </value>
         </entry>
@@ -366,6 +401,13 @@
             </list>
           </value>
         </entry>
+        <entry key="moment_dart">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/moment_dart-5.2.3/lib" />
+            </list>
+          </value>
+        </entry>
         <entry key="nested">
           <value>
             <list>
@@ -433,6 +475,48 @@
           <value>
             <list>
               <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/path_provider_windows-2.3.0/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="permission_handler">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler-11.4.0/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="permission_handler_android">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler_android-12.1.0/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="permission_handler_apple">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler_apple-9.4.7/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="permission_handler_html">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler_html-0.1.3+5/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="permission_handler_platform_interface">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler_platform_interface-4.3.0/lib" />
+            </list>
+          </value>
+        </entry>
+        <entry key="permission_handler_windows">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler_windows-0.2.1/lib" />
             </list>
           </value>
         </entry>
@@ -590,6 +674,13 @@
             </list>
           </value>
         </entry>
+        <entry key="timezone">
+          <value>
+            <list>
+              <option value="D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/timezone-0.9.4/lib" />
+            </list>
+          </value>
+        </entry>
         <entry key="typed_data">
           <value>
             <list>
@@ -667,6 +758,7 @@
       <root url="file://$USER_HOME$/Documents/flutter/packages/flutter/lib" />
       <root url="file://$USER_HOME$/Documents/flutter/packages/flutter_test/lib" />
       <root url="file://$USER_HOME$/Documents/flutter/packages/flutter_web_plugins/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/args-2.7.0/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/async-2.11.0/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/boolean_selector-2.1.1/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/characters-1.3.0/lib" />
@@ -675,6 +767,7 @@
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/cross_file-0.3.4+2/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/crypto-3.0.6/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/cupertino_icons-1.0.8/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/dbus-0.7.11/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/dio-5.8.0+1/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/dio_web_adapter-2.1.1/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/fake_async-1.3.1/lib" />
@@ -685,6 +778,9 @@
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/file_selector_platform_interface-2.6.2/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/file_selector_windows-0.9.3+4/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_lints-5.0.0/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_local_notifications-17.2.4/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_local_notifications_platform_interface-7.2.0/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.28/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_riverpod-2.6.1/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/flutter_svg-1.1.6/lib" />
@@ -716,6 +812,7 @@
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/material_color_utilities-0.11.1/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/meta-1.15.0/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/mime-2.0.0/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/moment_dart-5.2.3/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/nested-1.0.0/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/path-1.9.0/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/path_drawing-1.0.1/lib" />
@@ -726,6 +823,12 @@
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/path_provider_linux-2.2.1/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/path_provider_platform_interface-2.1.2/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/path_provider_windows-2.3.0/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler-11.4.0/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler_android-12.1.0/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler_apple-9.4.7/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler_html-0.1.3+5/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler_platform_interface-4.3.0/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/permission_handler_windows-0.2.1/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/petitparser-6.0.2/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/platform-3.1.6/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/plugin_platform_interface-2.1.8/lib" />
@@ -747,6 +850,7 @@
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/table_calendar-3.2.0/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/term_glyph-1.2.1/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/test_api-0.7.3/lib" />
+      <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/timezone-0.9.4/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/typed_data-1.4.0/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/vector_math-2.1.4/lib" />
       <root url="file://D:/Ryan/2025/dev/FlutterPubCache/hosted/pub.dev/vm_service-14.3.0/lib" />

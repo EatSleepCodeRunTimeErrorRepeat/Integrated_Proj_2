@@ -50,40 +50,62 @@ class _ProviderSelectionScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Select Electricity Provider'),
-        backgroundColor: AppTheme.background,
-        elevation: 0,
-        foregroundColor: AppTheme.textBlack,
-        automaticallyImplyLeading: Navigator.canPop(context),
-      ),
       backgroundColor: AppTheme.background,
       body: SafeArea(
-        // FIX: Wrap the Column in a SingleChildScrollView to ensure it never overflows
-        // on smaller screens.
         child: SingleChildScrollView(
           child: Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 20),
-                buildProviderCard(
-                  id: 'MEA',
-                  logo: 'assets/images/MEALogo.png',
-                  footer: 'Metropolitan Electricity Authority',
-                  footerColor: Colors.orange.shade700,
+                // Smaller Electricity Icon
+                Image.asset(
+                  'assets/icons/Electricity Icon.png',
+                  width: 70, // Reduced size
+                  height: 70, // Reduced size
                 ),
-                const SizedBox(height: 40),
-                buildProviderCard(
-                  id: 'PEA',
-                  logo: 'assets/images/PEALogo.png',
-                  footer: 'Provincial Electricity Authority',
-                  footerColor: Colors.purple.shade700,
+                const SizedBox(
+                    height: 10), // Reduced space between icon and text
+
+                // "Select your provider" text below the icon
+                Text(
+                  'Select your provider',
+                  textAlign: TextAlign.center, // Centered text
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600, // Semibold
+                    fontSize: 36,
+                    color: Color(0xFF356C33),
+                  ),
                 ),
-                const SizedBox(height: 60),
+                const SizedBox(
+                    height: 30), // Reduced spacing between text and cards
+
+                // Provider selection cards vertically stacked
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    buildProviderCard(
+                      id: 'MEA',
+                      logo: 'assets/images/MEALogo.png',
+                      footer: 'Metropolitan Electricity Authority',
+                      footerColor: Colors.orange.shade700,
+                    ),
+                    const SizedBox(height: 20), // Spacing between cards
+                    buildProviderCard(
+                      id: 'PEA',
+                      logo: 'assets/images/PEALogo.png',
+                      footer: 'Provincial Electricity Authority',
+                      footerColor: Colors.purple.shade700,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 40), // Spacing before the button
+
+                // "Click Here" button for provider info
                 TextButton(
                   onPressed: () => Navigator.push(
                       context,
@@ -130,8 +152,8 @@ class _ProviderSelectionScreenState
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        width: 250,
-        height: 250,
+        width: 250, // Original size for provider cards
+        height: 250, // Original size for provider cards
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: const Color(0xFFF8F2E5),
@@ -164,7 +186,7 @@ class _ProviderSelectionScreenState
               ),
             ),
             Container(
-              width: 200,
+              width: double.infinity, // Ensure it fits container width
               height: 50,
               alignment: Alignment.center,
               decoration: BoxDecoration(
