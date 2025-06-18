@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 class Note {
   final String id;
   final String content;
-  final String peakPeriod; // "ON_PEAK" or "OFF_PEAK"
+  final String peakPeriod;
   final DateTime date;
   final DateTime? remindAt;
 
@@ -17,6 +17,22 @@ class Note {
     required this.date,
     this.remindAt,
   });
+
+  Note copyWith({
+    String? id,
+    String? content,
+    String? peakPeriod,
+    DateTime? date,
+    DateTime? remindAt,
+  }) {
+    return Note(
+      id: id ?? this.id,
+      content: content ?? this.content,
+      peakPeriod: peakPeriod ?? this.peakPeriod,
+      date: date ?? this.date,
+      remindAt: remindAt ?? this.remindAt,
+    );
+  }
 
   factory Note.fromJson(Map<String, dynamic> json) {
     return Note(

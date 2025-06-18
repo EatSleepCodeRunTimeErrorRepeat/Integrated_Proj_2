@@ -3,7 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/models/note_model.dart';
+import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/calendar_provider.dart';
+import 'package:frontend/providers/home_provider.dart';
 import 'package:frontend/providers/notes_provider.dart';
+import 'package:frontend/services/notification_service.dart';
 import 'package:frontend/utils/app_theme.dart';
 import 'package:intl/intl.dart';
 
@@ -22,12 +26,11 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
   int _selectedPeriod = 0; // 0 for On-Peak, 1 for Off-Peak
   bool _isEditing = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Reset the change tracker when the screen is first built.
-    Future.microtask(
-        () => ref.read(didChangeNotesProvider.notifier).state = false);
+  // This function will now contain all the logic after a successful action
+  void _onNoteChanged() {
+    ref.invalidate(allNotesProvider);
+    ref.invalidate(homeProvider);
+    ref.read(notesProvider(widget.selectedDate).notifier).refresh();
   }
 
   @override
@@ -40,48 +43,31 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
         notesState.notes.where((n) => n.peakPeriod == 'OFF_PEAK').toList();
     final currentList = _selectedPeriod == 0 ? onPeakNotes : offPeakNotes;
 
-    // Use PopScope to handle back navigation and pass a result.
-    return PopScope(
-      canPop: false, // Prevents automatic popping.
-      onPopInvoked: (bool didPop) {
-        if (didPop) return;
-        // When a pop is attempted, manually pop with the result.
-        Navigator.of(context).pop(ref.read(didChangeNotesProvider));
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8F2E5),
-        appBar: AppBar(
-          title: Text(
-              'Tips for ${DateFormat.yMMMMd().format(widget.selectedDate)}',
-              style: const TextStyle(fontSize: 18)),
-          // Update the leading back button to use our manual pop logic.
-          leading: BackButton(
-            color: AppTheme.textBlack,
-            onPressed: () {
-              Navigator.of(context).pop(ref.read(didChangeNotesProvider));
-            },
-          ),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(child: _buildPeriodToggle()),
-                  const SizedBox(width: 16),
-                  _buildEditButton(),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: notesState.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _buildNotesList(currentList),
-              ),
-              if (_isEditing) _buildDoneButton(),
-            ],
-          ),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F2E5),
+      appBar: AppBar(
+        title: Text('Tips for ${DateFormat.yMMMMd().format(widget.selectedDate)}', style: const TextStyle(fontSize: 18)),
+        leading: const BackButton(color: AppTheme.textBlack),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(child: _buildPeriodToggle()),
+                const SizedBox(width: 16),
+                _buildEditButton(),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: notesState.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildNotesList(currentList),
+            ),
+            if (_isEditing) _buildDoneButton(),
+          ],
         ),
       ),
     );
@@ -187,42 +173,35 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                   child: const Text('Cancel',
                       style: TextStyle(color: AppTheme.primaryGreen)),
                 ),
-                ElevatedButton(
+                  ElevatedButton(
                   onPressed: () async {
+                    final notesNotifier = ref.read(notesProvider(widget.selectedDate).notifier);
                     final content = textController.text.trim();
                     if (content.isEmpty) return;
 
-                    final finalDateTime = DateTime(
-                        widget.selectedDate.year,
-                        widget.selectedDate.month,
-                        widget.selectedDate.day,
-                        selectedTime.hour,
-                        selectedTime.minute);
-                    final DateTime? reminderTime =
-                        reminderEnabled ? finalDateTime : null;
-
-                    bool success = false;
+                    final finalDateTime = DateTime(widget.selectedDate.year, widget.selectedDate.month, widget.selectedDate.day, selectedTime.hour, selectedTime.minute);
+                    final DateTime? reminderTime = reminderEnabled ? finalDateTime : null;
+                    
                     if (isEditingNote) {
-                      success = await notesNotifier.updateNote(
-                          note.id, content, dialogPeakPeriod, finalDateTime,
-                          remindAt: reminderTime);
+                      final updatedNote = await notesNotifier.updateNote(note.id, content, dialogPeakPeriod, finalDateTime);
+                      if (updatedNote != null && mounted) {
+                        // Use the new copyWith method
+                        final noteWithReminder = updatedNote.copyWith(remindAt: reminderTime);
+                        await NotificationService().scheduleNoteReminder(noteWithReminder);
+                        _onNoteChanged();
+                      }
                     } else {
-                      success = await notesNotifier.addNote(
-                          content, dialogPeakPeriod, finalDateTime,
-                          remindAt: reminderTime);
-                    }
-
-                    if (success) {
-                      ref.read(didChangeNotesProvider.notifier).state = true;
-                      await notesNotifier.refresh();
-                      // Check if context is still valid before using it
-                      if (dialogContext.mounted) {
-                        Navigator.of(dialogContext).pop();
+                      final newNote = await notesNotifier.addNote(content, dialogPeakPeriod, finalDateTime);
+                      if (newNote != null && mounted) {
+                        // Use the new copyWith method
+                        final noteWithReminder = newNote.copyWith(remindAt: reminderTime);
+                        await NotificationService().scheduleNoteReminder(noteWithReminder);
+                        _onNoteChanged();
                       }
                     }
+
+                    if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                   },
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryGreen),
                   child: const Text('Save'),
                 ),
               ],
@@ -320,7 +299,7 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
           child:
               Text('No tips for this period. ${_isEditing ? "Add one!" : ""}'));
     }
-    return ListView.builder(
+        return ListView.builder(
       itemCount: notes.length,
       itemBuilder: (context, index) {
         final note = notes[index];
@@ -350,12 +329,11 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                     icon: Image.asset('assets/icons/cancel.png',
                         width: 18, height: 18),
                     onPressed: () async {
-                      final notesNotifier =
-                          ref.read(notesProvider(widget.selectedDate).notifier);
+                    final notesNotifier = ref.read(notesProvider(widget.selectedDate).notifier);
                       final success = await notesNotifier.deleteNote(note.id);
-                      if (success) {
-                        ref.read(didChangeNotesProvider.notifier).state = true;
-                        await notesNotifier.refresh();
+                      if (success && mounted) {
+                        await NotificationService().cancelNoteReminder(note.id);
+                        _onNoteChanged();
                       }
                     },
                   ),

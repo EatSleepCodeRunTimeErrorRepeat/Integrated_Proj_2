@@ -12,8 +12,7 @@ import 'package:frontend/services/notification_service.dart';
 
 // --- Main Providers for the Schedule Screen ---
 
-final schedulesProvider =
-    FutureProvider.autoDispose<List<PeakSchedule>>((ref) async {
+final schedulesProvider = FutureProvider.autoDispose<List<PeakSchedule>>((ref) async {
   final user = ref.watch(authProvider).user;
   if (user?.provider == null) return [];
 
@@ -25,15 +24,13 @@ final schedulesProvider =
         .map((data) => PeakSchedule.fromJson(data))
         .toList();
 
-    // After fetching, trigger the scheduling logic.
-    // Read the current user preferences from the auth provider.
-    final bool generalOn =
-        ref.read(authProvider).user?.notificationsEnabled ?? true;
-    final bool peakAlertsOn =
-        ref.read(authProvider).user?.peakHourAlertsEnabled ?? true;
+    // --- THIS LOGIC IS NOW CORRECTED ---
+    final authState = ref.read(authProvider);
+    final bool generalOn = authState.user?.notificationsEnabled ?? true;
+    final bool peakAlertsOn = authState.user?.peakHourAlertsEnabled ?? true;
 
-    // Call the service with the required preferences
-    await NotificationService().schedulePeakHourAlerts(schedules,
+    // We no longer await this. We kick it off and let it run in the background.
+    NotificationService().schedulePeakHourAlerts(schedules,
         generalOn: generalOn, peakAlertsOn: peakAlertsOn);
 
     return schedules;

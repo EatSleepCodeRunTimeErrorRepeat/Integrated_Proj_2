@@ -97,7 +97,7 @@ class AuthProvider extends StateNotifier<AuthState> {
       final GoogleSignIn googleSignIn = GoogleSignIn(
         serverClientId:
             // This is the client ID for your backend server. -----------------------------------------------------------------------------------------------------------------------------
-            '671241424671-ruh5o6oroutmnvfl7k57uqjpk3mjhvkg.apps.googleusercontent.com', //replace with your actual client ID
+            '549119570408-75rd2fhqunrqs4f5ftf21q38l8al27ob.apps.googleusercontent.com', //replace with your actual client ID
         // -----------------------------------------------------------------------------------------------------------------------------
       );
 

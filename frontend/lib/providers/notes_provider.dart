@@ -54,76 +54,40 @@ class NotesNotifier extends StateNotifier<NotesState> {
     }
   }
 
-  // 'addNote' now just calls the API and returns true/false.
-  // It no longer tries to refresh other providers.
-  Future<bool> addNote(String content, String peakPeriod, DateTime date,
-      {DateTime? remindAt}) async {
+  // 'addNote' now jsut returns the updated note object on success.
+  Future<Note?> addNote(String content, String peakPeriod, DateTime date) async {
     try {
       final apiService = _ref.read(apiServiceProvider);
       final response = await apiService.createNote(content, peakPeriod, date);
-
       if (response.statusCode == 201) {
-        // On success, schedule the notification and report success.
-        final newNoteData = jsonDecode(response.body);
-        final noteWithReminder = Note(
-          id: newNoteData['id'],
-          content: newNoteData['content'],
-          peakPeriod: newNoteData['peakPeriod'],
-          date: DateTime.parse(newNoteData['date']).toLocal(),
-          remindAt: remindAt,
-        );
-        final bool isEnabled =
-            _ref.read(authProvider).user?.notificationsEnabled ?? true;
-        await NotificationService()
-            .scheduleNoteReminder(noteWithReminder, isEnabled: isEnabled);
-        return true;
+        return Note.fromJson(jsonDecode(response.body));
       }
-      return false;
+      return null;
     } catch (e) {
-      return false;
+      return null;
     }
   }
 
-  // 'updateNote' is also simplified.
-  Future<bool> updateNote(
-      String noteId, String content, String peakPeriod, DateTime date,
-      {DateTime? remindAt}) async {
+  // 'updateNote'now just returns the updated note object on success.
+  Future<Note?> updateNote(String noteId, String content, String peakPeriod, DateTime date) async {
     try {
       final apiService = _ref.read(apiServiceProvider);
-      final response =
-          await apiService.updateNote(noteId, content, peakPeriod, date);
-
+      final response = await apiService.updateNote(noteId, content, peakPeriod, date);
       if (response.statusCode == 200) {
-        final updatedNoteData = jsonDecode(response.body);
-        final noteWithReminder = Note(
-          id: updatedNoteData['id'],
-          content: updatedNoteData['content'],
-          peakPeriod: updatedNoteData['peakPeriod'],
-          date: DateTime.parse(updatedNoteData['date']).toLocal(),
-          remindAt: remindAt,
-        );
-        final bool isEnabled =
-            _ref.read(authProvider).user?.notificationsEnabled ?? true;
-        await NotificationService()
-            .scheduleNoteReminder(noteWithReminder, isEnabled: isEnabled);
-        return true;
+        return Note.fromJson(jsonDecode(response.body));
       }
-      return false;
+      return null;
     } catch (e) {
-      return false;
+      return null;
     }
   }
 
-  // 'deleteNote' is also simplified.
+  // 'deleteNote'  now jsut returns the updated note object on success.
   Future<bool> deleteNote(String noteId) async {
     try {
       final apiService = _ref.read(apiServiceProvider);
       final response = await apiService.deleteNote(noteId);
-      if (response.statusCode == 200) {
-        await NotificationService().cancelNoteReminder(noteId);
-        return true;
-      }
-      return false;
+      return response.statusCode == 200;
     } catch (e) {
       return false;
     }
