@@ -47,61 +47,61 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         children: [
           _buildCalendar(),
 
-          // --- IMMEDIATE TEST BUTTON ---
-          ElevatedButton(
-            onPressed: () async {
-              final FlutterLocalNotificationsPlugin
-                  flutterLocalNotificationsPlugin =
-                  FlutterLocalNotificationsPlugin();
-              await flutterLocalNotificationsPlugin.show(
-                999,
-                "🚀 Notification Test",
-                "If you see this, the channel is working.",
-                const NotificationDetails(
-                  android: AndroidNotificationDetails(
-                    'peak_hour_alerts_channel',
-                    'Peak Hour Alerts',
-                    channelDescription:
-                        'Notifications for upcoming peak electricity hours.',
-                    importance: Importance.max,
-                    priority: Priority.high,
-                  ),
-                ),
-              );
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content:
-                        Text("Test notification sent! Check system tray.")));
-              }
-            },
-            child: const Text("Send Immediate Test Notification"),
-          ),
+          // --- IMMEDIATE TEST BUTTON (COMMENTED OUT) ---
+          // ElevatedButton(
+          //   onPressed: () async {
+          //     final FlutterLocalNotificationsPlugin
+          //         flutterLocalNotificationsPlugin =
+          //         FlutterLocalNotificationsPlugin();
+          //     await flutterLocalNotificationsPlugin.show(
+          //       999,
+          //       "⚡",
+          //       "You are now in Peak Hour Period! Reduce Energy Consumption to save.",
+          //       const NotificationDetails(
+          //         android: AndroidNotificationDetails(
+          //           'peak_hour_alerts_channel',
+          //           'Peak Hour Alerts',
+          //           channelDescription:
+          //               'Notifications for upcoming peak electricity hours.',
+          //           importance: Importance.max,
+          //           priority: Priority.high,
+          //         ),
+          //       ),
+          //     );
+          //     if (mounted) {
+          //       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          //           content:
+          //               Text("Test notification sent! Check system tray.")));
+          //     }
+          //   },
+          //   child: const Text("Send Immediate Test Notification"),
+          // ),
 
-          // --- "TIME-TRAVEL" TEST BUTTON ---
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
-            onPressed: () async {
-              final notificationService = NotificationService();
-              final tz.TZDateTime scheduledTime =
-                  tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5));
+          // --- "TIME-TRAVEL" TEST BUTTON (COMMENTED OUT) ---
+          // ElevatedButton(
+          //   style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+          //   onPressed: () async {
+          //     final notificationService = NotificationService();
+          //     final tz.TZDateTime scheduledTime =
+          //         tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5));
 
-              // This assumes you added the 'scheduleTestNotification' method to your service
-              // from the previous instruction.
-              await notificationService.scheduleTestNotification(
-                title: "⏰ Scheduled Test",
-                body: "This notification was scheduled 5 seconds ago.",
-                scheduledTime: scheduledTime,
-              );
+          //     // This assumes you added the 'scheduleTestNotification' method to your service
+          //     // from the previous instruction.
+          //     await notificationService.scheduleTestNotification(
+          //       title: "⏰ Scheduled Test",
+          //       body: "This notification was scheduled 5 seconds ago.",
+          //       scheduledTime: scheduledTime,
+          //     );
 
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text("Scheduled test in 5 seconds..."),
-                  duration: Duration(seconds: 4),
-                ));
-              }
-            },
-            child: const Text("Send Scheduled Test (in 5s)"),
-          ),
+          //     if (mounted) {
+          //       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          //         content: Text("Scheduled test in 5 seconds..."),
+          //         duration: Duration(seconds: 4),
+          //       ));
+          //     }
+          //   },
+          //   child: const Text("Send Scheduled Test (in 5s)"),
+          // ),
 
           const Divider(height: 1, thickness: 1),
           Padding(

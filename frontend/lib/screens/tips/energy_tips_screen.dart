@@ -1,3 +1,5 @@
+// lib/screens/tips/energy_tips_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/models/note_model.dart';
@@ -38,103 +40,47 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
         notesState.notes.where((n) => n.peakPeriod == 'OFF_PEAK').toList();
     final currentList = _selectedPeriod == 0 ? onPeakNotes : offPeakNotes;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F2E5),
-      appBar: AppBar(
-        title: Text(
-            'Tips for ${DateFormat.yMMMMd().format(widget.selectedDate)}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-        leading: const BackButton(color: AppTheme.textBlack),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Main Controls: Toggle and Edit/Add Button
-            Row(
-              children: [
-                Expanded(child: _buildPeriodToggle()),
-                const SizedBox(width: 16),
-                _buildEditButton(notesNotifier),
-              ],
-            ),
-            const SizedBox(height: 20),
-            // The main list of notes
-            Expanded(
-              child: notesState.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _buildNotesList(currentList, notesNotifier),
-            ),
-            // The "Done" button that appears in edit mode
-            if (_isEditing) _buildDoneButton(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- UI WIDGETS ---
-
-  Widget _buildPeriodToggle() {
-    return Container(
-      height: 59,
-      decoration: BoxDecoration(
-          color: AppTheme.lightGrey,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withAlpha(26), blurRadius: 6)
-          ]),
-      child: Row(
-        children: [
-          Expanded(child: _buildToggleButton(0, 'On-Peak', AppTheme.peakRed)),
-          Expanded(
-              child: _buildToggleButton(1, 'Off-Peak', AppTheme.offPeakGreen)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToggleButton(int index, String text, Color activeColor) {
-    final isSelected = _selectedPeriod == index;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedPeriod = index),
-      child: Container(
-        height: double.infinity,
-        decoration: BoxDecoration(
-            color: isSelected ? activeColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(10)),
-        child: Center(
-            child: Text(text,
-                style: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.textGrey,
-                    fontWeight: FontWeight.w500))),
-      ),
-    );
-  }
-
-  Widget _buildEditButton(NotesNotifier notifier) {
-    return GestureDetector(
-      onTap: () {
-        if (_isEditing) {
-          _showAddEditNoteDialog(notifier: notifier);
-        } else {
-          setState(() => _isEditing = true);
-        }
+    // Use PopScope to handle back navigation and pass a result.
+    return PopScope(
+      canPop: false, // Prevents automatic popping.
+      onPopInvoked: (bool didPop) {
+        if (didPop) return;
+        // When a pop is attempted, manually pop with the result.
+        Navigator.of(context).pop(ref.read(didChangeNotesProvider));
       },
-      child: Container(
-        width: 59,
-        height: 59,
-        decoration: BoxDecoration(
-            color: _isEditing
-                ? const Color.fromARGB(255, 192, 192, 192)
-                : Colors.grey,
-            shape: BoxShape.circle),
-        child: Center(
-          child: Image.asset(
-            _isEditing ? 'assets/icons/add.png' : 'assets/icons/editpencil.png',
-            width: 24,
-            height: 24,
-            color: Colors.white,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F2E5),
+        appBar: AppBar(
+          title: Text(
+              'Tips for ${DateFormat.yMMMMd().format(widget.selectedDate)}',
+              style: const TextStyle(fontSize: 18)),
+          // Update the leading back button to use our manual pop logic.
+          leading: BackButton(
+            color: AppTheme.textBlack,
+            onPressed: () {
+              Navigator.of(context).pop(ref.read(didChangeNotesProvider));
+            },
+          ),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: _buildPeriodToggle()),
+                  const SizedBox(width: 16),
+                  _buildEditButton(),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: notesState.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildNotesList(currentList),
+              ),
+              if (_isEditing) _buildDoneButton(),
+            ],
           ),
         ),
       ),
@@ -143,70 +89,6 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
 
   void _showAddEditNoteDialog({Note? note}) {
     final notesNotifier = ref.read(notesProvider(widget.selectedDate).notifier);
-  Widget _buildDoneButton() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 6.0), // Moved up by a few pixels
-      child: GestureDetector(
-        onTap: () => setState(() => _isEditing = false),
-        child: Container(
-          width: 60,
-          height: 60,
-          decoration: const BoxDecoration(
-              color: AppTheme.primaryGreen, shape: BoxShape.circle),
-          child: Center(
-              child: Image.asset('assets/icons/donedit.png',
-                  width: 32, height: 32)),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNotesList(List<Note> notes, NotesNotifier notifier) {
-    if (notes.isEmpty) {
-      return Center(
-          child:
-              Text('No tips for this period. ${_isEditing ? "Add one!" : ""}'));
-    }
-    return ListView.builder(
-      itemCount: notes.length,
-      itemBuilder: (context, index) {
-        final note = notes[index];
-        return InkWell(
-          // Allow tapping a note to edit it, but only in edit mode
-          onTap: _isEditing
-              ? () => _showAddEditNoteDialog(notifier: notifier, note: note)
-              : null,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-                color: const Color(0xFF545454).withAlpha(15),
-                borderRadius: BorderRadius.circular(12)),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(note.content,
-                      style: const TextStyle(
-                          color: Color(0xFF545454), fontSize: 16)),
-                ),
-                // Show the delete button only in edit mode
-                if (_isEditing)
-                  IconButton(
-                    icon: Image.asset('assets/icons/cancel.png',
-                        width: 24, height: 24), // Increased size
-                    onPressed: () => notifier.deleteNote(note.id),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // --- THE RESTORED AND STYLED DIALOG ---
-
-  void _showAddEditNoteDialog({required NotesNotifier notifier, Note? note}) {
     final isEditingNote = note != null;
     final textController =
         TextEditingController(text: isEditingNote ? note.content : '');
@@ -311,8 +193,6 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                     if (content.isEmpty) return;
 
                     final finalDateTime = DateTime(
-                    if (content.isNotEmpty) {
-                      final finalDateTime = DateTime(
                         widget.selectedDate.year,
                         widget.selectedDate.month,
                         widget.selectedDate.day,
@@ -320,10 +200,6 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                         selectedTime.minute);
                     final DateTime? reminderTime =
                         reminderEnabled ? finalDateTime : null;
-                        selectedTime.minute,
-                      );
-                      final DateTime? reminderTime =
-                          reminderEnabled ? finalDateTime : null;
 
                     bool success = false;
                     if (isEditingNote) {
@@ -340,26 +216,12 @@ class _EnergyTipsScreenState extends ConsumerState<EnergyTipsScreen> {
                       ref.read(didChangeNotesProvider.notifier).state = true;
                       await notesNotifier.refresh();
                       // Check if context is still valid before using it
-                      if (isEditingNote) {
-                        await notifier.updateNote(
-                            note.id, content, dialogPeakPeriod, finalDateTime,
-                            remindAt: reminderTime);
-                      } else {
-                        await notifier.addNote(
-                            content, dialogPeakPeriod, finalDateTime,
-                            remindAt: reminderTime);
-                      }
-
                       if (dialogContext.mounted) {
                         Navigator.of(dialogContext).pop();
                       }
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(120, 40),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                       backgroundColor: AppTheme.primaryGreen),
                   child: const Text('Save'),
                 ),

@@ -53,6 +53,7 @@ dependencies:
   timezone: ^0.9.3 # For handling time zones in the app
   moment_dart: ^5.2.3 # For date and time manipulation
   permission_handler: ^11.3.1 # For handling permissions in the app
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
