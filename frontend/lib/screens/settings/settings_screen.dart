@@ -1,18 +1,22 @@
 // lib/screens/settings/settings_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // <-- ADD THIS IMPORT
+import 'package:frontend/providers/auth_provider.dart'; // <-- ADD THIS IMPORT
 import 'package:frontend/screens/settings/about_screen.dart';
 import 'package:frontend/screens/settings/change_password_screen.dart';
 import 'package:frontend/screens/settings/notifications_screen.dart';
 import 'package:frontend/screens/settings/terms_screen.dart';
-import 'package:frontend/services/notification_service.dart'; // <-- ADD THIS IMPORT
+import 'package:frontend/services/notification_service.dart';
 import 'package:frontend/utils/app_theme.dart';
 
-class SettingsScreen extends StatelessWidget {
+// --- CHANGE THIS TO A ConsumerWidget ---
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // <-- ADD WidgetRef ref
     return Scaffold(
       body: ListView(
         padding: const EdgeInsets.all(24),
@@ -27,22 +31,32 @@ class SettingsScreen extends StatelessWidget {
               context, 'Notifications', const NotificationsScreen()),
           _buildSettingItem(
               context, 'Change Password', const ChangePasswordScreen()),
-          
+
           const SizedBox(height: 24),
 
-          // --- THIS IS THE NEW DEBUG SECTION ---
           const Text('Debug Tools',
-              style:
-                  TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
+
+          // --- THIS BUTTON LOGIC IS NOW UPDATED ---
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
             onPressed: () async {
-              await NotificationService().showTestNotification();
+              // 1. Read the user's current preference from the auth state.
+              final bool isEnabled =
+                  ref.read(authProvider).user?.notificationsEnabled ?? false;
+
+              // 2. Pass the preference to the service.
+              await NotificationService()
+                  .showTestNotification(isEnabled: isEnabled);
+
+              // 3. Show a different confirmation message based on the setting.
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text("Test notification sent! Check system tray."),
-                    backgroundColor: Colors.green,
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(isEnabled
+                      ? "Test notification sent! Check system tray."
+                      : "No notification sent because they are disabled in settings."),
+                  backgroundColor: isEnabled ? Colors.green : Colors.red,
                 ));
               }
             },
@@ -56,7 +70,6 @@ class SettingsScreen extends StatelessWidget {
             },
             child: const Text('Print Pending Notifications'),
           ),
-          // --- END OF DEBUG SECTION ---
 
           const SizedBox(height: 24),
           const Text('More',
@@ -66,8 +79,8 @@ class SettingsScreen extends StatelessWidget {
                   color: AppTheme.textGrey)),
           const SizedBox(height: 8),
           _buildSettingItem(context, 'About us', const AboutUsScreen()),
-          _buildSettingItem(
-              context, 'Terms and conditions', const TermsAndConditionsScreen()),
+          _buildSettingItem(context, 'Terms and conditions',
+              const TermsAndConditionsScreen()),
         ],
       ),
     );

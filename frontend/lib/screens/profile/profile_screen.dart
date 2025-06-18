@@ -17,11 +17,13 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
 
+  // This method is now simplified. It just picks the file and passes it to the provider.
   Future<void> _pickImage() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+    final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 50, maxWidth: 600);
     if (pickedFile != null) {
-      await ref.read(authProvider.notifier).updateLocalAvatar(pickedFile);
+      // Call the new provider method that handles saving and state updates
+      await ref.read(authProvider.notifier).updateProfilePicture(pickedFile);
     }
   }
 
@@ -153,15 +155,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final ImageProvider displayImage;
+    ImageProvider displayImage;
     if (authState.localAvatarPath != null) {
+      // 1. Prioritize the locally saved image file.
       displayImage = FileImage(File(authState.localAvatarPath!));
     } else if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty) {
+      // 2. Otherwise, use the URL from Google Sign-In.
       displayImage = NetworkImage(user.avatarUrl!);
     } else {
+      // 3. Fallback to the default asset image.
       displayImage = const AssetImage('assets/images/avatar.png');
     }
-
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: Column(
@@ -174,9 +178,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Stack(
                     alignment: Alignment.bottomRight,
                     children: [
-                      CircleAvatar(radius: 54, backgroundImage: displayImage),
+                      CircleAvatar(
+                        radius: 54,
+                        backgroundImage: displayImage,
+                        child: authState.isLoading
+                            ? const CircularProgressIndicator()
+                            : null,
+                      ),
                       GestureDetector(
-                        onTap: _pickImage,
+                        onTap: authState.isLoading ? null : _pickImage,
                         child: Container(
                           decoration: BoxDecoration(
                               color: AppTheme.primaryGreen,

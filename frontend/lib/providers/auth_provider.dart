@@ -12,6 +12,8 @@ import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/services/notification_service.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 // Provides an instance of our ApiService to the rest of the app.
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
@@ -80,10 +82,49 @@ class AuthProvider extends StateNotifier<AuthState> {
     if (token != null) {
       // If a token exists, fetch the user's profile to confirm it's valid.
       await fetchUserProfile();
-      await _loadSavedAvatar(); // Also load any locally saved avatar path
+      await _loadSavedAvatarPath(); // Also load any locally saved avatar path
     } else {
       // If no token, set state to not loading and no user.
       state = state.copyWith(isLoading: false, clearUser: true);
+    }
+  }
+
+  // --- THIS IS THE NEW CORE LOGIC FOR SAVING THE IMAGE ---
+  Future<void> updateProfilePicture(XFile imageFile) async {
+    if (state.user == null) return;
+
+    state = state.copyWith(isLoading: true);
+    try {
+      // 1. Find the directory to save the image permanently
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = p.basename(imageFile.path);
+      final savedImagePath = p.join(directory.path, fileName);
+
+      // 2. Copy the temporary image file to the new permanent path
+      final File savedImage = await File(imageFile.path).copy(savedImagePath);
+
+      // 3. Save the new permanent path using SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('avatar_path_${state.user!.id}', savedImage.path);
+
+      // 4. Update the UI state to show the new image immediately
+      state =
+          state.copyWith(localAvatarPath: savedImage.path, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: "Failed to save image.");
+    }
+  }
+
+  Future<void> _loadSavedAvatarPath() async {
+    if (state.user == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPath = prefs.getString('avatar_path_${state.user!.id}');
+      if (savedPath != null) {
+        state = state.copyWith(localAvatarPath: savedPath);
+      }
+    } catch (e) {
+      // It's okay if this fails, we just won't show a local avatar
     }
   }
 
@@ -234,14 +275,16 @@ class AuthProvider extends StateNotifier<AuthState> {
   // --- 3. Profile and Data Management ---
 
   /// Fetches the current user's full profile from the backend.
+
   Future<void> fetchUserProfile() async {
     try {
       final response = await _apiService.getUserProfile();
       if (response.statusCode == 200) {
         final user = User.fromJson(jsonDecode(response.body));
         state = state.copyWith(isLoading: false, user: user, error: null);
+        // After we successfully fetch the user, we load their saved avatar path.
+        await _loadSavedAvatarPath();
       } else {
-        // If fetching the profile fails (e.g., expired token), log the user out.
         await logout();
       }
     } catch (e) {
@@ -372,14 +415,6 @@ class AuthProvider extends StateNotifier<AuthState> {
     if (savedPath != null) {
       state = state.copyWith(localAvatarPath: savedPath);
     }
-  }
-
-  /// Saves the path of a newly picked avatar image for instant display.
-  Future<void> updateLocalAvatar(XFile file) async {
-    if (state.user == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('avatar_path_${state.user!.id}', file.path);
-    state = state.copyWith(localAvatarPath: file.path);
   }
 
   Future<void> _triggerScheduling() async {
