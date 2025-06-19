@@ -43,10 +43,10 @@ This project is built on a three-platform architecture to ensure a clear separat
 
 ### Backend Setup
 
-1.  Navigate to the `backend` directory:
-    ```sh
-    cd backend
-    ```
+You can run the backend either locally with Node.js or within a Docker container.
+
+#### **Option 1: Running Locally**
+1.  Navigate to the `backend` directory: `cd backend`
 2.  Create a `.env` file in the `backend` root and populate it with your credentials:
     ```env
     DATABASE_URL="mongodb+srv://..."
@@ -55,48 +55,63 @@ This project is built on a three-platform architecture to ensure a clear separat
     JWT_TOKEN_REFRESH_SECRET="your_jwt_refresh_secret"
     GOOGLE_CLIENT_ID="your_google_web_client_id.apps.googleusercontent.com"
     ```
-3.  Install dependencies:
+3.  Install dependencies: `npm install`
+4.  Sync the database schema: `npx prisma db push`
+5.  Seed the database with initial data: `npx prisma db seed`
+6.  Start the development server: `npm run dev`
+
+---
+#### **Option 2: Running with Docker (Recommended)**
+
+**Prerequisites:** Make sure you have [Docker](https://www.docker.com/products/docker-desktop/) installed and running on your machine.
+
+1.  **Navigate to the `backend` directory:**
     ```sh
-    npm install
+    cd backend
     ```
-4.  Sync the database schema:
+
+2.  **Create the Environment File:**
+    Create a `.env` file in the `backend` root and populate it with your credentials (same as the local setup). The Docker container will use this file automatically.
+
+3.  **Build and Start the Container:**
+    This single command will build the Docker image from the `Dockerfile` and start the backend service in the background.
     ```sh
-    npx prisma db push
+    docker-compose up --build -d
     ```
-5.  Seed the database with initial data (schedules and a test user):
+
+4.  **Seed the Database:**
+    After the container is running, you need to execute the seed command **inside** the container. Run this command from your `backend` directory:
     ```sh
-    npx prisma db seed
+    docker-compose exec backend npx prisma db seed
     ```
-6.  Start the development server:
+    This tells Docker to execute the `npx prisma db seed` command within the running `backend` service container.
+
+5.  **Viewing Logs:**
+    To see the real-time logs from the running container (for debugging), open a new terminal and use:
     ```sh
-    npm run dev
+    docker-compose logs -f backend
+    ```
+
+6.  **Stopping the Container:**
+    To stop the service when you are finished, run:
+    ```sh
+    docker-compose down
     ```
 
 ### Frontend Setup
 
-1.  Navigate to the `frontend` directory:
-    ```sh
-    cd frontend
-    ```
-2.  Update `lib/utils/constants.dart` with your computer's local network IP address to allow a physical device to connect to your backend.
-3.  Install dependencies:
-    ```sh
-    flutter pub get
-    ```
-4.  Run the app on an emulator or a connected device:
-    ```sh
-    flutter run
-    ```
+1.  Navigate to the `frontend` directory: `cd frontend`
+2.  Update `lib/utils/constants.dart` with your computer's local network IP address if you are testing on a physical phone. For the emulator, `'10.0.2.2'` should work correctly.
+3.  Install dependencies: `flutter pub get`
+4.  Run the app: `flutter run`
 
 ## Known Issues & Limitations
 
 ### Notification Delivery on Specific Devices
 
-The application's logic for scheduling local notifications is fully implemented and demonstrably correct. Using the debug tools built into the settings screen ("Print Pending Notifications"), we can verify that all notification requests for both peak hours and user notes are successfully accepted and queued by the Android Operating System.
+The application's logic for scheduling local notifications for both peak hours and user-created notes is fully implemented. Using the debug tools built into the app's settings screen, we can verify that all notification requests are successfully accepted and queued by the Android Operating System.
 
-However, due to aggressive, non-standard battery management policies on certain physical phone models (e.g., Oppo, Xiaomi) and potential restrictions in new Android emulator APIs (API 34+), the OS may de-prioritize or fail to deliver these scheduled notifications when the app is in the background.
-
-The "Send Immediate Test Notification" button, which uses a direct `.show()` call instead of scheduling, works perfectly on all devices, confirming that the app's basic permissions and notification channels are set up correctly. This limitation is therefore not a bug in the application's code but a well-known, real-world challenge in Android development related to platform-specific behavior.
+However, due to aggressive, non-standard battery management on certain physical devices (e.g., Oppo) and potential restrictions in new Android emulator APIs, the OS may de-prioritize or fail to deliver these scheduled notifications when the app is in the background. The "Send Immediate Test Notification" button works perfectly, confirming the app's basic permissions are correct. This is a demonstration of a real-world Android development challenge known as platform-specific behavior.
 
 ## Contributors
 - Ryan Letchman (64130500256)

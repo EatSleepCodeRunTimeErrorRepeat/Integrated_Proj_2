@@ -9,7 +9,7 @@ const String _androidEmulatorIp = '10.0.2.2';
 // Use this IP for testing on a PHYSICAL phone or a WEB BROWSER.
 // Find this by typing 'ipconfig' (Windows) or checking System Settings (Mac).
 // Make sure your phone and computer are on the same Wi-Fi network.
-const String _localNetworkIp = ''; // <-- REPLACE THIS
+const String _localNetworkIp = '192.168.56.1'; // <-- REPLACE THIS
 
 // The port backend is running on from .env file.
 const String _port = '8000';
